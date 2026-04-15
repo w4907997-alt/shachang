@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>沙场记账</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ==================== 首页 ==================== -->
+    <div id="page-home" class="page active">
+        <div class="page-header">
+            <h1>沙场记账</h1>
+        </div>
+        <div class="page-body">
+            <div class="home-stats">
+                <div class="stat-card">
+                    <div class="stat-label">今日订单</div>
+                    <div class="stat-value" id="home-today-orders">0</div>
+                    <div class="stat-unit">笔</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">今日金额</div>
+                    <div class="stat-value" id="home-today-amount">¥0</div>
+                </div>
+                <div class="stat-card stat-card-warn">
+                    <div class="stat-label">未结清欠款</div>
+                    <div class="stat-value" id="home-total-debt">¥0</div>
+                </div>
+            </div>
+            <div class="section-title">近期订单</div>
+            <div id="home-recent-orders" class="order-list">
+                <div class="empty-tip">暂无订单记录</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 记账助手（聊天页） ==================== -->
+    <div id="page-chat" class="page">
+        <div class="page-header">
+            <h1>记账助手</h1>
+            <button class="header-btn" id="chat-menu-btn">⋮</button>
+        </div>
+        <div id="chat-messages" class="chat-area">
+            <div class="chat-welcome">
+                <p> 你好！我是记账助手</p>
+                <p>输入商品和数量，我帮你开单</p>
+                <p>例如：水泥20 黄沙15</p>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="输入商品信息..." />
+            <button id="chat-send-btn" class="btn-primary">发送</button>
+        </div>
+    </div>
+
+    <!-- ==================== 收银台 ==================== -->
+    <div id="page-cashier" class="page">
+        <div class="page-header">
+            <button class="back-btn" onclick="goBack()">← 返回</button>
+            <h1>收银台</h1>
+        </div>
+        <div class="page-body">
+            <!-- ① 客户选择（必选） -->
+            <div class="form-section">
+                <label class="form-label">客户 <span class="required">*必选</span></label>
+                <div class="row-flex">
+                    <select id="cashier-customer" class="form-select">
+                        <option value="">请选择客户</option>
+                    </select>
+                    <button class="btn-small" onclick="showAddCustomerFromCashier()">+新增</button>
+                </div>
+            </div>
+            <!-- ② 送货地址 -->
+            <div class="form-section">
+                <label class="form-label">送货地址</label>
+                <div id="cashier-address-history" class="address-tags"></div>
+                <input type="text" id="cashier-address" class="form-input" placeholder="输入新地址（可选）" />
+            </div>
+            <!-- ③ 商品明细 -->
+            <div class="form-section">
+                <label class="form-label">商品明细</label>
+                <div id="cashier-items" class="cashier-items"></div>
+                <button class="btn-add-item" onclick="addCashierItem()">+ 添加商品</button>
+            </div>
+            <!-- ④ 订单状态 -->
+            <div class="form-section">
+                <label class="form-label">订单状态</label>
+                <div class="status-row">
+                    <span class="status-text-left">未结清</span>
+                    <label class="switch">
+                        <input type="checkbox" id="cashier-settled" onchange="onSettledChange()">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="status-text-right">已结清</span>
+                </div>
+            </div>
+            <!-- ⑤ 已付金额（未结清时显示） -->
+            <div class="form-section" id="cashier-paid-section">
+                <label class="form-label">已付金额</label>
+                <input type="number" id="cashier-paid-amount" class="form-input" placeholder="输入已付金额" value="0" />
+            </div>
+            <!-- ⑥ 总金额 -->
+            <div class="total-bar">
+                <span class="total-label">总金额</span>
+                <span class="total-amount" id="cashier-total">¥0.00</span>
+</div>
+            <!-- ⑦ 操作按钮 -->
+            <div class="action-buttons">
+                <button class="btn-secondary" onclick="goBack()">返回</button>
+                <button class="btn-primary" onclick="saveOrder()">保存订单</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 客户列表 ==================== -->
+    <div id="page-customers" class="page">
+        <div class="page-header">
+            <h1>客户管理</h1>
+            <button class="header-btn" onclick="showAddCustomer()">+</button>
+        </div>
+        <div class="page-body">
+            <div class="search-bar">
+                <input type="text" id="customer-search" placeholder="搜索客户姓名或电话" oninput="searchCustomers()" />
+            </div>
+            <div id="customer-list" class="list-container">
+                <div class="empty-tip">暂无客户，点右上角 + 添加</div>
+            </div>
+        </div>
+    </div>
+    <!-- ==================== 客户详情 ==================== -->
+    <div id="page-customer-detail" class="page">
+        <div class="page-header">
+            <button class="back-btn" onclick="goBack()">← 返回</button>
+            <h1 id="detail-customer-name">客户详情</h1>
+            <button class="header-btn" onclick="editCurrentCustomer()">编辑</button>
+        </div>
+        <div class="page-body" id="customer-detail-content">
+        </div>
+    </div>
+
+    <!-- ==================== 报表统计 ==================== -->
+    <div id="page-reports" class="page">
+        <div class="page-header">
+            <h1>报表统计</h1>
+        </div>
+        <div class="page-body">
+            <div class="report-tabs">
+                <button class="tab-btn active" onclick="switchReportTab(this, 'time')">按时间查账</button>
+                <button class="tab-btn" onclick="switchReportTab(this, 'customer')">按客户查账</button>
+            </div>
+            <div class="report-filter">
+                <select id="report-time-range" class="form-select" onchange="loadReport()">
+                    <option value="today">今天</option>
+                    <option value="month" selected>本月</option>
+                    <option value="custom">自定义</option>
+                </select>
+                <div id="report-custom-dates" class="custom-dates" style="display:none;">
+                    <input type="date" id="report-date-start" class="form-input" />
+                    <span>至</span>
+                    <input type="date" id="report-date-end" class="form-input" />
+                    <button class="btn-small" onclick="loadReport()">查询</button>
+                </div>
+            </div>
+            <div id="report-summary" class="report-summary"></div>
+            <div id="report-content" class="list-container"></div>
+            <div class="report-export">
+                <button class="btn-secondary" onclick="exportExcel()">导出Excel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 系统管理 ==================== -->
+    <div id="page-settings" class="page">
+        <div class="page-header">
+            <h1>系统管理</h1>
+        </div>
+        <div class="page-body">
+            <div class="settings-menu">
+                <div class="menu-item" onclick="showPage('page-products')">
+                    <span class="menu-icon"></span>
+                    <span class="menu-text">产品管理</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item" onclick="showPage('page-password')">
+                    <span class="menu-icon"></span>
+                    <span class="menu-text">密码设置</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item" onclick="showExportOptions()">
+                    <span class="menu-icon"></span>
+                    <span class="menu-text">导出Excel</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item" onclick="backupData()">
+                    <span class="menu-icon"></span>
+                    <span class="menu-text">备份数据</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item" onclick="restoreData()">
+                    <span class="menu-icon"></span>
+                    <span class="menu-text">恢复数据</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+                <div class="menu-item menu-item-danger" onclick="clearAllData()">
+                    <span class="menu-icon"></span>
+                    <span class="menu-text">清空所有数据</span>
+                    <span class="menu-arrow">›</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 产品管理 ==================== -->
+    <div id="page-products" class="page">
+        <div class="page-header">
+            <button class="back-btn" onclick="showPage('page-settings')">← 返回</button>
+            <h1>产品管理</h1>
+            <button class="header-btn" onclick="showAddProduct()">+</button>
+        </div>
+        <div class="page-body">
+            <div id="product-list" class="list-container">
+                <div class="empty-tip">暂无产品，点右上角 + 添加</div>
+            </div>
+        </div>
+    </div>
+  <!-- ==================== 密码设置（第三阶段才实现） ==================== -->
+    <div id="page-password" class="page">
+        <div class="page-header">
+            <button class="back-btn" onclick="showPage('page-settings')">← 返回</button>
+            <h1>密码设置</h1>
+        </div>
+        <div class="page-body">
+            <div class="empty-tip">此功能将在后续版本中开放</div>
+        </div>
+    </div>
+
+    <!-- ==================== 弹窗 ==================== -->
+    <div id="modal-overlay" class="modal-overlay" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span id="modal-title"></span>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div id="modal-body" class="modal-body"></div>
+            <div id="modal-footer" class="modal-footer"></div>
+        </div>
+    </div>
+
+    <!-- ==================== 提示消息 ==================== -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ==================== 底部导航栏 ==================== -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home')">
+            <span class="nav-icon"></span>
+            <span class="nav-text">首页</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('chat')">
+            <span class="nav-icon"></span>
+            <span class="nav-text">记账</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('customers')">
+            <span class="nav-icon"></span>
+            <span class="nav-text">客户</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('reports')">
+            <span class="nav-icon"></span>
+            <span class="nav-text">报表</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('settings')">
+            <span class="nav-icon"></span>
+            <span class="nav-text">管理</span>
+        </div>
+    </nav>
+    <!-- ==================== JS文件引用 ==================== -->
+    <script src="db.js"></script>
+    <script src="product.js"></script>
+    <script src="customer.js"></script>
+    <script src="order.js"></script>
+    <script src="chat.js"></script>
+    <script src="report.js"></script>
+    <script src="delivery.js"></script>
+    <script src="excel.js"></script>
+    <script src="auth.js"></script>
+    <script src="backup.js"></script>
+
+    <script>
+    /* ==================== 核心逻辑：页面切换 ==================== */
+
+    var currentPage = 'page-home';
+    var pageHistory = [];
+
+    // 底部导航切换
+    function switchTab(tabName) {
+        var pageId = 'page-' + tabName;
+        pageHistory = [];
+        showPage(pageId);
+
+        // 更新底部导航高亮
+        var navItems = document.querySelectorAll('.nav-item');
+        var tabs = ['home', 'chat', 'customers', 'reports', 'settings'];
+        for (var i = 0; i < navItems.length; i++) {
+            navItems[i].classList.remove('active');
+        }
+        var idx = tabs.indexOf(tabName);
+        if (idx >= 0) {
+            navItems[idx].classList.add('active');
+        }
+
+        // 切换页面时加载数据
+        try {
+            if (tabName === 'home' && typeof loadHomePage === 'function') loadHomePage();
+            if (tabName === 'customers' && typeof loadCustomerList === 'function') loadCustomerList();
+            if (tabName === 'reports' && typeof loadReport === 'function') loadReport();
+            if (tabName === 'chat' && typeof loadChatHistory === 'function') loadChatHistory();
+        } catch(e) {
+            console.log('功能模块尚未加载：' + e.message);
+        }
+    }
+
+    // 显示指定页面
+    function showPage(pageId) {
+        if (currentPage !== pageId) {
+            pageHistory.push(currentPage);
+        }
+        var pages = document.querySelectorAll('.page');
+        for (var i = 0; i < pages.length; i++) {
+            pages[i].classList.remove('active');
+        }
+        document.getElementById(pageId).classList.add('active');
+        currentPage = pageId;
+        // 滚动到顶部
+        var activeBody = document.querySelector('#' + pageId + ' .page-body');
+        if (activeBody) activeBody.scrollTop = 0;
+    }
+
+    // 返回上一页
+    function goBack() {
+        if (pageHistory.length > 0) {
+            var prevPage = pageHistory.pop();
+            var pages = document.querySelectorAll('.page');
+            for (var i = 0; i < pages.length; i++) {
+                pages[i].classList.remove('active');
+            }
+            document.getElementById(prevPage).classList.add('active');
+            currentPage = prevPage;
+        }
+    }
+
+    /* ==================== 提示消息 ==================== */
+
+    function showToast(message, duration) {
+        duration = duration || 2000;
+        var toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(function() {
+            toast.classList.remove('show');
+        }, duration);
+    }
+    /* ==================== 弹窗系统 ==================== */
+
+    function showModal(title, bodyHTML, footerHTML) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-body').innerHTML = bodyHTML;
+        document.getElementById('modal-footer').innerHTML = footerHTML || '';
+        document.getElementById('modal-overlay').classList.add('show');
+    }
+
+    function closeModal() {
+        document.getElementById('modal-overlay').classList.remove('show');
+    }
+
+    // 确认弹窗（二次确认用）
+    function showConfirm(title, message, onConfirm) {
+        showModal(
+            title,
+            '<p class="confirm-message">' + message + '</p>',
+            '<button class="btn-secondary" onclick="closeModal()">取消</button>' +
+            '<button class="btn-primary" id="confirm-yes-btn">确定</button>'
+        );
+        setTimeout(function() {
+            document.getElementById('confirm-yes-btn').onclick = function() {
+                closeModal();
+                if (onConfirm) onConfirm();
+            };
+        }, 50);
+    }
+
+    /* ==================== 收银台：结清状态切换 ==================== */
+
+    function onSettledChange() {
+        var settled = document.getElementById('cashier-settled').checked;
+        var paidSection = document.getElementById('cashier-paid-section');
+        if (settled) {
+            paidSection.style.display = 'none';
+        } else {
+            paidSection.style.display = 'block';
+        }
+    }
+
+    /* ==================== 首页加载（占位） ==================== */
+
+    function loadHomePage() {
+        // 等 db.js 和 order.js 写好后，这里会被覆盖
+    }
+
+    /* ==================== 报表标签切换 ==================== */
+
+    function switchReportTab(btn, type) {
+        var btns = document.querySelectorAll('.report-tabs .tab-btn');
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].classList.remove('active');
+        }
+        btn.classList.add('active');
+        try {
+            if (typeof loadReport === 'function') loadReport(type);
+        } catch(e) {}
+    }
+
+    /* ==================== 页面初始化 ==================== */
+
+    window.onload = function() {
+        console.log('沙场记账系统启动');
+        // 等db.js加载后会自动初始化数据库
+        try {
+            if (typeof initDB === 'function') {
+                initDB(function() {
+                    console.log('数据库初始化完成');
+                    loadHomePage();
+                });
+            }
+        } catch(e) {
+            console.log('数据库模块尚未加载');
+        }
+    };
+    </script>
+
+</body>
+</html>
