@@ -63,7 +63,7 @@ function removeCashierItem(index) {
     renderCashierItems();
     updateCashierTotal();
 }
-/ 渲染商品列表
+// 渲染商品列表
 function renderCashierItems() {
     dbGetAll('products', function(products) {
         var container = document.getElementById('cashier-items');
