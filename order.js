@@ -358,76 +358,83 @@ function refreshAfterOrderChange() {
         if (typeof loadCustomerList === 'function') loadCustomerList();
     } catch(e) {}
 }
+/* ---------- 等页面脚本全部加载后再覆盖 ---------- */
 
-/* ---------- 首页数据加载 ---------- */
+document.addEventListener('DOMContentLoaded', function() {
 
-loadHomePage = function() {
-    dbGetAll('orders', function(orders) {
-        var today = getTodayString();
-        var todayOrders = 0;
-        var todayAmount = 0;
-        var totalDebt = 0;
+    /* -- 覆盖首页数据加载 -- */
+    loadHomePage = function() {
+        dbGetAll('orders', function(orders) {
+            var today = getTodayString();
+            var todayOrders = 0;
+            var todayAmount = 0;
+            var totalDebt = 0;
 
-        for (var i = 0; i < orders.length; i++) {
-            var o = orders[i];
-            if (o.date && o.date.substring(0, 10) === today) {
-                todayOrders++;
-                todayAmount += o.totalAmount || 0;
+            for (var i = 0; i < orders.length; i++) {
+                var o = orders[i];
+                if (o.date && o.date.substring(0, 10) === today) {
+                    todayOrders++;
+                    todayAmount += o.totalAmount || 0;
+                }
+                if (!o.settled) {
+                    totalDebt += (o.totalAmount || 0) - (o.paidAmount || 0);
+                }
             }
-            if (!o.settled) {
-                totalDebt += (o.totalAmount || 0) - (o.paidAmount || 0);
+
+            document.getElementById('home-today-orders').textContent = todayOrders;
+            document.getElementById('home-today-amount').textContent = formatMoney(todayAmount);
+            document.getElementById('home-total-debt').textContent = formatMoney(totalDebt);
+
+            orders.sort(function(a, b) {
+                return b.date > a.date ? 1 : -1;
+            });
+            var recent = orders.slice(0, 20);
+            var box = document.getElementById('home-recent-orders');
+
+            if (recent.length === 0) {
+                box.innerHTML = '<div class="empty-tip">暂无订单记录</div>';
+                return;
             }
-        }
 
-        document.getElementById('home-today-orders').textContent = todayOrders;
-        document.getElementById('home-today-amount').textContent = formatMoney(todayAmount);
-        document.getElementById('home-total-debt').textContent = formatMoney(totalDebt);
-
-        orders.sort(function(a, b) {
-            return b.date > a.date ? 1 : -1;
+            var html = '';
+            for (var j = 0; j < recent.length; j++) {
+                var ro = recent[j];
+                var sc = ro.settled ? 'settled' : 'unsettled';
+                var st = ro.settled ? '已结清' : '未结清';
+                html += '<div class="order-item" onclick="openOrderInCashier(' + ro.id + ')">';
+                html += '<div class="order-top">';
+                html += '<span class="order-customer">' + (ro.customerName || '未知') + '</span>';
+                html += '<span class="order-amount">' + formatMoney(ro.totalAmount) + '</span>';
+                html += '</div>';
+                html += '<div class="order-info">';
+                html += (ro.date || '') + '<br/>';
+                if (ro.address) html += ro.address + '<br/>';
+                html += (ro.summary || '');
+                html += '</div>';
+                html += '<span class="order-status ' + sc + '">' + st + '</span>';
+                html += '</div>';
+            }
+            box.innerHTML = html;
         });
-        var recent = orders.slice(0, 20);
-        var box = document.getElementById('home-recent-orders');
-
-        if (recent.length === 0) {
-            box.innerHTML = '<div class="empty-tip">暂无订单记录</div>';
+    };
+    /* -- 覆盖底部导航"记账"入口 -- */
+    var _origSwitchTab = switchTab;
+    switchTab = function(tabName) {
+        if (tabName === 'chat') {
+            openCashier();
+            var navs = document.querySelectorAll('.nav-item');
+            for (var i = 0; i < navs.length; i++) {
+                navs[i].classList.remove('active');
+            }
+            navs[1].classList.add('active');
             return;
         }
+        _origSwitchTab(tabName);
+    };
 
-        var html = '';
-        for (var j = 0; j < recent.length; j++) {
-            var ro = recent[j];
-            var sc = ro.settled ? 'settled' : 'unsettled';
-            var st = ro.settled ? '已结清' : '未结清';
-            html += '<div class="order-item" onclick="openOrderInCashier(' + ro.id + ')">';
-            html += '<div class="order-top">';
-            html += '<span class="order-customer">' + (ro.customerName || '未知') + '</span>';
-            html += '<span class="order-amount">' + formatMoney(ro.totalAmount) + '</span>';
-            html += '</div>';
-            html += '<div class="order-info">';
-            html += (ro.date || '') + '<br/>';
-            if (ro.address) html += ro.address + '<br/>';
-            html += (ro.summary || '');
-            html += '</div>';
-            html += '<span class="order-status ' + sc + '">' + st + '</span>';
-            html += '</div>';
-        }
-        box.innerHTML = html;
-    });
-};
+    /* -- 立即加载首页数据 -- */
+    try {
+        if (db) loadHomePage();
+    } catch(e) {}
 
-/* ---------- 底部导航"记账"入口绑定 ---------- */
-
-var _origSwitchTab = switchTab;
-switchTab = function(tabName) {
-    if (tabName === 'chat') {
-        openCashier();
-        var navs = document.querySelectorAll('.nav-item');
-        for (var i = 0; i < navs.length; i++) {
-            navs[i].classList.remove('active');
-        }
-        navs[1].classList.add('active');
-        return;
-    }
-    _origSwitchTab(tabName);
-};
+});
