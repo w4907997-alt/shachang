@@ -389,3 +389,118 @@ function selectAddress(el, address) {
     el.classList.add('selected');
     document.getElementById('cashier-address').value = address;
 }
+/* ========== 客户专属单价管理 ========== */
+
+function loadCustomerPrices(customerId) {
+    var existing = document.getElementById('price-section-box');
+    if (existing) existing.remove();
+
+    dbGetByIndex('customerPrices', 'customerId', customerId, function(prices) {
+        dbGetAll('products', function(products) {
+            var section = document.createElement('div');
+            section.className = 'detail-section';
+            section.id = 'price-section-box';
+
+            var html = '<div class="detail-section-title">专属单价</div>';
+            if (prices.length === 0) {
+                html += '<div style="color:#aaa;font-size:14px;">暂无专属单价，使用默认价</div>';
+            } else {
+                for (var i = 0; i < prices.length; i++) {
+                    var pName = '未知产品';
+                    var defaultPrice = 0;
+                    for (var j = 0; j < products.length; j++) {
+                        if (products[j].id === prices[i].productId) {
+                            pName = products[j].name;
+                            defaultPrice = products[j].price || 0;
+                            break;
+                        }
+                    }
+                    html += '<div class="detail-row">';
+                    html += '<span class="label">' + pName + ' <span style="color:#aaa;font-size:12px;">(默认' + formatMoney(defaultPrice) + ')</span></span>';
+                    html += '<span>';
+                    html += '<span class="value" style="color:#1a73e8;margin-right:8px;">' + formatMoney(prices[i].price) + '</span>';
+                    html += '<button style="background:none;border:none;color:#e53935;font-size:13px;cursor:pointer;" onclick="deleteCustomerPrice(' + prices[i].id + ',' + customerId + ')">删除</button>';
+                    html += '</span>';
+                    html += '</div>';
+                }
+            }
+            html += '<div style="margin-top:10px;"><button class="btn-small" onclick="showAddCustomerPrice(' + customerId + ')">+ 添加专属单价</button></div>';
+            section.innerHTML = html;
+
+            var content = document.getElementById('customer-detail-content');
+            var sections = content.querySelectorAll('.detail-section');
+            if (sections.length >= 2) {
+                sections[1].parentNode.insertBefore(section, sections[2] || null);
+            } else {
+                content.appendChild(section);
+            }
+        });
+    });
+}
+function showAddCustomerPrice(customerId) {
+    dbGetAll('products', function(products) {
+        var opts = '';
+        for (var i = 0; i < products.length; i++) {
+            var p = products[i];
+            opts += '<option value="' + p.id + '">' + p.name + ' (默认' + formatMoney(p.price) + '/' + p.unit + ')</option>';
+        }
+        var bodyHTML = '<div class="form-section">';
+        bodyHTML += '<label class="form-label">选择产品</label>';
+        bodyHTML += '<select class="form-select" id="price-product-select">' + opts + '</select>';
+        bodyHTML += '</div>';
+        bodyHTML += '<div class="form-section">';
+        bodyHTML += '<label class="form-label">专属单价</label>';
+        bodyHTML += '<input type="number" step="0.01" class="form-input" id="price-value-input" placeholder="输入该客户的专属单价" />';
+        bodyHTML += '</div>';
+
+        showModal('添加专属单价', bodyHTML,
+            '<button class="btn-secondary" onclick="closeModal()">取消</button>' +
+            '<button class="btn-primary" onclick="saveCustomerPrice(' + customerId + ')">保存</button>'
+        );
+    });
+}
+
+function saveCustomerPrice(customerId) {
+    var productId = parseInt(document.getElementById('price-product-select').value);
+    var price = parseFloat(document.getElementById('price-value-input').value);
+    if (!productId || isNaN(price)) {
+        showToast('请选择产品并输入单价');
+        return;
+    }
+    dbGetByIndex('customerPrices', 'customerId', customerId, function(existing) {
+        for (var i = 0; i < existing.length; i++) {
+            if (existing[i].productId === productId) {
+                existing[i].price = price;
+                dbUpdate('customerPrices', existing[i], function() {
+                    closeModal();
+                    showToast('专属单价已更新');
+                    loadCustomerPrices(customerId);
+                });
+                return;
+            }
+        }
+        dbAdd('customerPrices', { customerId: customerId, productId: productId, price: price }, function() {
+            closeModal();
+            showToast('专属单价已添加');
+            loadCustomerPrices(customerId);
+        });
+    });
+}
+
+function deleteCustomerPrice(priceId, customerId) {
+    showConfirm('删除专属单价', '确定删除这个专属单价吗？', function() {
+        dbDelete('customerPrices', priceId, function(ok) {
+            if (ok) {
+                showToast('已删除');
+                loadCustomerPrices(customerId);
+            }
+        });
+    });
+}
+
+// 客户详情页加载完后自动注入专属单价
+var _origShowDetail = showCustomerDetail;
+showCustomerDetail = function(cid) {
+    _origShowDetail(cid);
+    setTimeout(function() { loadCustomerPrices(cid); }, 200);
+};
