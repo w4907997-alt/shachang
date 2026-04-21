@@ -233,52 +233,79 @@ function parseOrderText(text) {
 
         remaining = processedText;
 
-        // 3. 提取产品和数量（名称长的优先匹配）
-        var sorted = products.slice().sort(function(a, b) {
-          return b.name.length - a.name.length;
-        });
+        // 3. 先按分段处理，分段符：逗号、换行、顿号、空格组
+// 重新分段（用原始替换后的文本）
+var segs = remaining.split(/[,，、\n\r]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
 
-        for (var i = 0; i < sorted.length; i++) {
-          var p = sorted[i];
-          var eName = escapeRegex(p.name);
-          var qty = 0;
-          var matched = false;
+// 对每个分段，尝试匹配产品+数量
+var sorted = products.slice().sort(function(a, b) {
+  return b.name.length - a.name.length;
+});
 
-          // 产品名+数字
-          var m1 = remaining.match(new RegExp(eName + '\\s*(\\d+\\.?\\d*)'));
-          if (m1 && m1[1]) {
-            qty = parseFloat(m1[1]);
-            remaining = remaining.replace(m1[0], ' ');
-            matched = true;
-          }
+var matchedSegIndexes = [];
 
-          // 数字+产品名
-          if (!matched) {
-            var m2 = remaining.match(new RegExp('(\\d+\\.?\\d*)\\s*' + eName));
-            if (m2 && m2[1]) {
-              qty = parseFloat(m2[1]);
-              remaining = remaining.replace(m2[0], ' ');
-              matched = true;
-            }
-          }
+for (var si = 0; si < segs.length; si++) {
+  var seg = segs[si];
+  var segMatched = false;
 
-          // 只有产品名没有数字 → 默认1
-          if (!matched && remaining.indexOf(p.name) >= 0) {
-            qty = 1;
-            remaining = remaining.replace(p.name, ' ');
-            matched = true;
-          }
+  for (var pi = 0; pi < sorted.length; pi++) {
+    var p = sorted[pi];
+    var eName = escapeRegex(p.name);
+    var qty = 0;
 
-          if (matched && qty > 0) {
-            result.items.push({
-              productId: p.id,
-              productName: p.name,
-              quantity: qty,
-              price: p.price || 0,
-              unit: p.unit || ''
-            });
-          }
+    // 产品名+数字
+    var m1 = seg.match(new RegExp(eName + '\\s*(\\d+\\.?\\d*)'));
+    if (m1 && m1[1] && parseFloat(m1[1]) > 0) {
+      qty = parseFloat(m1[1]);
+    }
+
+    // 数字+产品名
+    if (!qty) {
+      var m2 = seg.match(new RegExp('(\\d+\\.?\\d*)\\s*' + eName));
+      if (m2 && m2[1] && parseFloat(m2[1]) > 0) {
+        qty = parseFloat(m2[1]);
+      }
+    }
+
+    // 只有产品名没有数字 → 默认1
+    if (!qty && seg.indexOf(p.name) >= 0) {
+      qty = 1;
+    }
+
+    if (qty > 0) {
+      // 检查是否已经添加过同一个产品（防止重复）
+      var alreadyAdded = false;
+      for (var ai = 0; ai < result.items.length; ai++) {
+        if (result.items[ai].productId === p.id) {
+          alreadyAdded = true;
+          break;
         }
+      }
+      if (!alreadyAdded) {
+        result.items.push({
+          productId: p.id,
+          productName: p.name,
+          quantity: qty,
+          price: p.price || 0,
+          unit: p.unit || ''
+        });
+        segMatched = true;
+        matchedSegIndexes.push(si);
+        break; // 一个分段只匹配一个产品
+      }
+    }
+  }
+}
+
+// 没匹配到产品的分段，看是不是客户名/地址（remaining用未匹配的分段拼起来）
+var unmatchedSegs = [];
+for (var ui = 0; ui < segs.length; ui++) {
+  if (matchedSegIndexes.indexOf(ui) === -1) {
+    unmatchedSegs.push(segs[ui]);
+  }
+}
+remaining = unmatchedSegs.join(' ');
+
 
         // 4. 匹配客户姓名
         var cSorted = customers.slice().sort(function(a, b) {
