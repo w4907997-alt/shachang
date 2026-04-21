@@ -463,14 +463,12 @@ function loadChatHistory() {
 document.addEventListener('DOMContentLoaded', function() {
   // 发送按钮
   document.getElementById('chat-send-btn').addEventListener('click', sendChatMessage);
-
-  // 回车发送（B8修复：普通回车发送，不插入换行）
-  document.getElementById('chat-input').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendChatMessage();
-    }
-  });
+// textarea自动撑高
+var chatInput = document.getElementById('chat-input');
+chatInput.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
 
   // B2修复：保存订单后回到聊天页时，只在真正保存成功时才显示成功提示
   var chatPage = document.getElementById('page-chat');
