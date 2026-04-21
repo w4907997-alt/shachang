@@ -3,6 +3,8 @@
 
 var cashierItems = [];
 var cashierEditingOrderId = null;
+var cashierOriginalDate = null;
+
 
 /* ---------- 打开收银台 ---------- */
 
@@ -298,7 +300,8 @@ function openOrderInCashier(orderId) {
         }
         cashierEditingOrderId = order.id;
         cashierItems = [];
-        loadCashierCustomers(order.customerId);
+        cashierOriginalDate = order.date;
+ loadCashierCustomers(order.customerId);
         document.getElementById('cashier-address').value = order.address || '';
         document.getElementById('cashier-settled').checked = order.settled;
         document.getElementById('cashier-paid-section').style.display = order.settled ? 'none' : 'block';
