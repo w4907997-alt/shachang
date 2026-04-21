@@ -447,9 +447,10 @@ function loadChatHistory() {
         var bubble = document.createElement('div');
         bubble.className = 'chat-bubble ' + (msg.type || 'system');
         if (msg.type === 'user') {
-          bubble.textContent = msg.content || '';
-          bubble.innerHTML = bubble.innerHTML.replace(/\n/g, '<br>');
-        } else {
+  var escaped = (msg.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  bubble.innerHTML = escaped.replace(/\n/g, '<br>');
+}
+ else {
           bubble.innerHTML = msg.content || '';
         }
         container.appendChild(bubble);
