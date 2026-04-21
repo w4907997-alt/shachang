@@ -174,6 +174,7 @@ function saveAddressIfNew(customerId, address, callback) {
     });
 }
 
+
 function openOrderInCashier(orderId) {
     dbGet('orders', orderId, function(order) {
         if (!order) { showToast('订单不存在'); return; }
@@ -213,7 +214,7 @@ function refreshAfterOrderChange() {
     try { if (typeof loadHomePage === 'function') loadHomePage(); if (typeof loadCustomerList === 'function') loadCustomerList(); } catch(e) {}
 }
 
-/* ===== 首页 + 底部导航 ===== */
+/* ===== 首页数据加载 ===== */
 document.addEventListener('DOMContentLoaded', function() {
 
     loadHomePage = function() {
@@ -236,15 +237,29 @@ document.addEventListener('DOMContentLoaded', function() {
             var recent = orders.slice(0, 20);
             var box = document.getElementById('home-recent-orders');
             if (recent.length === 0) { box.innerHTML = '<div class="empty-tip">暂无订单记录</div>'; return; }
+
+            /* 按日期分组 */
             var html = '';
+            var lastDateLabel = '';
             for (var j = 0; j < recent.length; j++) {
                 var ro = recent[j];
+                var dateStr = (ro.date || '').substring(0, 10);
+                var dateLabel = '';
+                if (dateStr === today) {
+                    dateLabel = '今天';
+                } else {
+                    dateLabel = dateStr.substring(5);
+                }
+                if (dateLabel !== lastDateLabel) {
+                    html += '<div class="date-divider">' + dateLabel + '</div>';
+                    lastDateLabel = dateLabel;
+                }
                 var sc = ro.settled ? 'settled' : 'unsettled';
                 var st = ro.settled ? '已结清' : '未结清';
                 var firstChar = (ro.customerName || '未').substring(0, 1);
                 var avatarCls = ro.settled ? 'order-avatar' : 'order-avatar unpaid';
                 var amtCls = ro.settled ? 'order-amount' : 'order-amount unpaid';
-                var timeStr = (ro.date || '').substring(5);
+                var timeStr = (ro.date || '').substring(11, 16);
                 html += '<div class="order-item" onclick="openOrderInCashier(' + ro.id + ')">';
                 html += '<div class="' + avatarCls + '">' + firstChar + '</div>';
                 html += '<div class="order-info"><div class="order-top">';
@@ -258,18 +273,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             box.innerHTML = html;
         });
-    };
-
-    var _prevSwitchTab = switchTab;
-    switchTab = function(tabName) {
-        if (tabName === 'chat') {
-            openCashier();
-            var navs = document.querySelectorAll('.nav-item');
-            for (var i = 0; i < navs.length; i++) navs[i].classList.remove('active');
-            navs[1].classList.add('active');
-            return;
-        }
-        _prevSwitchTab(tabName);
     };
 
     try { if (db) loadHomePage(); } catch(e) {}
