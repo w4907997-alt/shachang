@@ -563,15 +563,23 @@ html, body {
 
 /* 底部输入区 */
 .chat-input-area {
+  position: fixed;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
   padding: 10px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 10px;
-  flex-shrink: 0;
+  z-index: 50;
+  box-sizing: border-box;
 }
 .open-btn {
   background: var(--primary-dark);
