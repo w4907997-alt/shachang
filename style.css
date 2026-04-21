@@ -425,11 +425,10 @@ html, body {
   display: flex;
   flex-direction: column;
 }
-
 .chat-area {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 16px 0;
+  padding: 16px 16px 80px;
   display: flex;
   flex-direction: column;
   gap: 4px;
