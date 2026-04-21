@@ -142,6 +142,10 @@ html, body {
 }
 .page-body-home {
   padding-top: 0;
+  overflow: visible;
+}
+#page-home {
+  overflow-y: auto;
 }
 
 /* ==================== 底部导航栏 ==================== */
