@@ -231,7 +231,7 @@ function saveOrder() {
         paidAmount: paidAmount,
         settled: settled,
         // B10：编辑时保留原始开单日期，结清时间单独记录
-        date: cashierEditingOrderId ? cashierOriginalDate : fullDate,
+        date: cashierEditingOrderId ? (orderDate + ' ' + (cashierOriginalDate || '').substring(11, 16)) : fullDate,
         orderNo: orderNo,
         summary: summary
       };
