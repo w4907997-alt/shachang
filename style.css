@@ -601,6 +601,10 @@ html, body {
   color: var(--text);
   outline: none;
   min-width: 0;
+  resize: none;
+  overflow-y: hidden;
+  max-height: 120px;
+  line-height: 1.5;
 }
 #chat-input::placeholder {
   color: var(--text-sub);
