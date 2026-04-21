@@ -1,7 +1,11 @@
-/* ==================== 产品管理 ==================== */
+/* ================= 产品管理 ================= */
 
 // 加载产品列表
 function loadProductList() {
+    if (!db) {
+        setTimeout(loadProductList, 300);
+        return;
+    }
     dbGetAll('products', function(products) {
         var container = document.getElementById('product-list');
         if (products.length === 0) {
