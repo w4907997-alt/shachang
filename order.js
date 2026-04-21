@@ -204,7 +204,7 @@ function saveOrder() {
                 totalAmount: totalAmount,
                 paidAmount: paidAmount,
                 settled: settled,
-                date: getNowString(),
+                date: cashierEditingOrderId ? cashierOriginalDate : getNowString(),
                 orderNo: orderNo,
                 summary: summary
             };
