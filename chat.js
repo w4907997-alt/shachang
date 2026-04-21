@@ -62,11 +62,12 @@ function addChatBubble(content, type, save) {
   bubble.className = 'chat-bubble ' + type;
   // B8修复：保留换行
   if (type === 'user') {
-    bubble.textContent = content;
-    bubble.innerHTML = bubble.innerHTML.replace(/\n/g, '<br>');
-  } else {
-    bubble.innerHTML = content;
-  }
+  // 先转义HTML，再把换行替换成<br>
+  var escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  bubble.innerHTML = escaped.replace(/\n/g, '<br>');
+} else {
+  bubble.innerHTML = content;
+}
   container.appendChild(bubble);
   container.scrollTop = container.scrollHeight;
 
