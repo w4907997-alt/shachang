@@ -491,10 +491,15 @@ function doRefund(originalOrderId) {
 
 /* ========== B9：优化刷新 ========== */
 function refreshAfterOrderChange() {
+  try { if (typeof loadHomePage === 'function') loadHomePage(); } catch(e) {}
+  try { if (typeof loadCustomerList === 'function') loadCustomerList(); } catch(e) {}
   try {
-    if (typeof loadHomePage === 'function') loadHomePage();
+    if (currentCustomerId && typeof showCustomerDetail === 'function') {
+      showCustomerDetail(currentCustomerId);
+    }
   } catch(e) {}
 }
+
 
 /* ========== 首页数据加载（新UI模板） ========== */
 document.addEventListener('DOMContentLoaded', function() {
