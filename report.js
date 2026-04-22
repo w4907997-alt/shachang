@@ -183,7 +183,7 @@ function loadCustomerReport(startDate, endDate) {
         summaryHtml += '<div class="stat-card"><span class="stat-label">总金额</span><span class="stat-value">' + formatMoney(grandTotal) + '</span></div>';
       }
       summaryHtml += '<div class="stat-card"><span class="stat-label">已结清</span><span class="stat-value">' + formatMoney(grandSettled) + '</span></div>';
-      summaryHtml += '<div class="stat-card"><span class="stat-label">欠款</span><span class="stat-value">' + formatMoney(grandUnsettled) + '</span></div>';
+      summaryHtml += '<div class="stat-card"><span class="stat-label">欠款</span><span class="stat-value" style="color:var(--warn)">' + formatMoney(grandUnsettled) + '</span></div>';
       document.getElementById('report-summary').innerHTML = summaryHtml;
 
       renderCustomerReportList(list);
