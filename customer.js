@@ -54,7 +54,7 @@ function loadCustomerList(keyword) {
         if (debt > 0) {
           html += '<div class="customer-debt">欠 ' + formatMoney(debt) + '</div>';
             } else {
-              html += '<div class="customer-debt" style="color:var(--ok)">已结清</div>';
+          html += '<div class="customer-debt" style="color:var(--ok)">已结清 ' + formatMoney(settledMap[c.id] || 0) + '</div>';
             }
 
         html += '</div>';
