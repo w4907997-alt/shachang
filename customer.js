@@ -161,15 +161,17 @@ function showCustomerDetail(customerId) {
         var html = '';
 
         // 账目汇总（渐变卡片）
-        html += '<div class="summary-card-gradient">';
-        html += '<div class="summary-row"><span class="summary-label">总金额</span><span class="summary-value">' + formatMoney(totalAmount) + '</span></div>';
-        if (unsettledAmount > 0) {
-          html += '<div class="summary-row"><span class="summary-label">欠款</span><span class="summary-value" style="color:#FFD4B8;">' + formatMoney(unsettledAmount) + '</span></div>';
-        } else {
-          // U10修复：全部结清后显示「已结清」不留空白
-          html += '<div class="summary-row"><span class="summary-label">已结清</span><span class="summary-value">' + formatMoney(settledAmount) + '</span></div>';
-        }
-        html += '</div>';
+html += '<div class="summary-card-gradient">';
+html += '<div class="summary-row"><span class="summary-label">总金额</span><span class="summary-value">' + formatMoney(totalAmount) + '</span></div>';
+if (unsettledAmount > 0) {
+  html += '<div class="summary-row"><span class="summary-label">欠款</span><span class="summary-value">' + formatMoney(unsettledAmount) + '</span></div>';
+} else if (orders.length > 0) {
+  html += '<div class="summary-row"><span class="summary-label">状态</span><span class="summary-value">已全部结清 ✓</span></div>';
+} else {
+  html += '<div class="summary-row"><span class="summary-label">状态</span><span class="summary-value">暂无订单</span></div>';
+}
+html += '</div>';
+
 
         // 基本信息（收纳到更多信息下拉）
         html += '<div class="detail-section">';
