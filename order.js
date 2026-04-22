@@ -250,10 +250,11 @@ function saveOrder() {
             if (ok) {
               saveOrderItems(cashierEditingOrderId, validItems, function() {
                 saveAddressIfNew(customerId, address, function() {
-                  window._orderSavedOK = true;
-                  showToast('订单已更新');
-                  goBack();
-                  refreshAfterOrderChange();
+
+window._orderSavedOK = true;
+showToast('订单已更新');
+goBack();
+setTimeout(function() { refreshAfterOrderChange(); }, 100);
                 });
               });
             }
