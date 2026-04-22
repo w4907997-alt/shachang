@@ -528,19 +528,24 @@ chatInput.addEventListener('paste', function() {
   // 接管"记账"Tab
   var _prevSwitchTab = switchTab;
   switchTab = function(tabName) {
-    if (tabName === 'chat') {
-      pageHistory = [];
-      var pages = document.querySelectorAll('.page');
-      for (var p = 0; p < pages.length; p++) pages[p].classList.remove('active');
-      document.getElementById('page-chat').classList.add('active');
-      currentPage = 'page-chat';
-      var navs = document.querySelectorAll('.nav-item');
-      for (var n = 0; n < navs.length; n++) navs[n].classList.remove('active');
-      navs[1].classList.add('active');
-      return;
-    }
-    _prevSwitchTab(tabName);
-  };
+  if (tabName === 'chat') {
+    pageHistory = [];
+    var pages = document.querySelectorAll('.page');
+    for (var p = 0; p < pages.length; p++) pages[p].classList.remove('active');
+    document.getElementById('page-chat').classList.add('active');
+    currentPage = 'page-chat';
+    var navs = document.querySelectorAll('.nav-item');
+    for (var n = 0; n < navs.length; n++) navs[n].classList.remove('active');
+    navs[1].classList.add('active');
+    // 每次进入聊天页滚到底部
+    setTimeout(function() {
+      var chatArea = document.getElementById('chat-messages');
+      if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
+    }, 50);
+    return;
+  }
+  _prevSwitchTab(tabName);
+};
 
 // N11：加载历史聊天记录
 setTimeout(function() {
