@@ -38,6 +38,8 @@ function openCashier(preData) {
   }
 
   showPage('page-cashier');
+document.getElementById('page-cashier').scrollTop = 0;
+
   if (cashierItems.length === 0) addCashierItem();
   else renderCashierItems();
 }
@@ -342,6 +344,7 @@ function openOrderInCashier(orderId) {
       if (items.length === 0) {
         addCashierItem();
         showPage('page-cashier');
+document.getElementById('page-cashier').scrollTop = 0;
         return;
       }
 
@@ -365,6 +368,7 @@ function openOrderInCashier(orderId) {
         renderCashierItems();
         updateCashierTotal();
         showPage('page-cashier');
+document.getElementById('page-cashier').scrollTop = 0;
       });
     });
   });
