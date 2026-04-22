@@ -171,7 +171,7 @@ if (unsettledAmount > 0) {
 } else if (orders.length > 0) {
               html += '<div class="summary-row"><span class="summary-label">已结清</span><span class="summary-value">' + formatMoney(settledAmount) + '</span></div>';
 } else {
-  html += '<div class="summary-row"><span class="summary-label">状态</span><span class="summary-value">暂无订单</span></div>';
+              html += '<div class="summary-row"><span class="summary-label">已结清</span><span class="summary-value">¥0.00</span></div>';
 }
 html += '</div>';
 
