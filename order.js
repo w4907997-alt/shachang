@@ -506,20 +506,7 @@ function refreshAfterOrderChange() {
   try { if (typeof loadCustomerList === 'function') loadCustomerList(); } catch(e) {}
   try {
     if (typeof currentCustomerId !== 'undefined' && currentCustomerId && typeof showCustomerDetail === 'function') {
-      // 不跳转页面，只刷新数据
-      var cid = currentCustomerId;
-      dbGet('customers', cid, function(customer) {
-        if (!customer) return;
-        dbGetAll('orders', function(allOrders) {
-          var orders = allOrders.filter(function(o) { return o.customerId === cid; });
-          var totalDebt = 0;
-          for (var i = 0; i < orders.length; i++) {
-            if (!orders[i].settled) {
-              totalDebt += (orders[i].totalAmount || 0) - (orders[i].paidAmount || 0);
-            }
-          }
-        });
-      });
+      showCustomerDetail(currentCustomerId);
     }
   } catch(e) {}
 }
