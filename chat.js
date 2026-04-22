@@ -542,8 +542,11 @@ chatInput.addEventListener('paste', function() {
     _prevSwitchTab(tabName);
   };
 
-  // N11：加载历史聊天记录
-  setTimeout(function() {
-    if (db) loadChatHistory();
-  }, 800);
-});
+// N11：加载历史聊天记录
+setTimeout(function() {
+  if (db) loadChatHistory();
+  // 进入聊天页时滚到底部
+  var chatArea = document.getElementById('chat-messages');
+  if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
+}, 800);
+
