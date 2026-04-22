@@ -142,10 +142,3 @@ function doChangePassword() {
     });
   });
 }
-
-/* ---------- 启动时检查登录 ---------- */
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(function() {
-    if (db) checkAuth();
-  }, 500);
-});
