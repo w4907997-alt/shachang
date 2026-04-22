@@ -265,10 +265,10 @@ setTimeout(function() { refreshAfterOrderChange(); }, 100);
           if (orderId) {
             saveOrderItems(orderId, validItems, function() {
               saveAddressIfNew(customerId, address, function() {
-                window._orderSavedOK = true;
-                showToast('订单已保存 ' + formatMoney(totalAmount));
-                goBack();
-                refreshAfterOrderChange();
+             window._orderSavedOK = true;
+showToast('订单已保存 ' + formatMoney(totalAmount));
+goBack();
+setTimeout(function() { refreshAfterOrderChange(); }, 100);
               });
             });
           } else {
