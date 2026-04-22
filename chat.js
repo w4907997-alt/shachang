@@ -498,6 +498,13 @@ chatInput.addEventListener('input', function() {
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
+chatInput.addEventListener('paste', function() {
+  var self = this;
+  setTimeout(function() {
+    self.style.height = 'auto';
+    self.style.height = Math.min(self.scrollHeight, 120) + 'px';
+  }, 0);
+});
 
   // B2修复：保存订单后回到聊天页时，只在真正保存成功时才显示成功提示
   var chatPage = document.getElementById('page-chat');
