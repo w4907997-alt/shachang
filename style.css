@@ -424,6 +424,7 @@ html, body {
 #page-chat.active {
   display: flex;
   flex-direction: column;
+  padding-bottom: 64px;
 }
 .chat-area {
   flex: 1;
