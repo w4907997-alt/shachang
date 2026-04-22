@@ -32,7 +32,11 @@ function loadCustomerList(keyword) {
           var cid = o.customerId;
           if (!debtMap[cid]) debtMap[cid] = 0;
           debtMap[cid] += (o.totalAmount || 0) - (o.paidAmount || 0);
-        }
+            } else {
+              var cid2 = o.customerId;
+              if (!settledMap[cid2]) settledMap[cid2] = 0;
+              settledMap[cid2] += o.totalAmount || 0;
+            }
       }
 
       var html = '';
