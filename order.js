@@ -37,8 +37,10 @@ function openCashier(preData) {
     if (preData.customerId) setTimeout(function() { loadCashierCustomers(preData.customerId); }, 100);
   }
 
-  showPage('page-cashier');
-document.getElementById('page-cashier').scrollTop = 0;
+showPage('page-cashier');
+var cashierBody = document.querySelector('#page-cashier .page-body');
+if (cashierBody) cashierBody.scrollTop = 0;
+window.scrollTo(0, 0);
 
   if (cashierItems.length === 0) addCashierItem();
   else renderCashierItems();
