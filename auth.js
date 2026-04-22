@@ -62,27 +62,21 @@ function showLoginScreen() {
   overlay.appendChild(box);
   document.body.appendChild(overlay);
 
-  document.getElementById('auth-login-btn').onclick = function() {
-    var pw = document.getElementById('auth-pw-input').value;
-    var err = document.getElementById('auth-error');
-
-    dbGetAll('systemConfig', function(configs) {
-      var saved = null;
-      for (var i = 0; i < configs.length; i++) {
-        if (configs[i].key === AUTH_KEY) saved = configs[i].value;
-      }
-
-      if (pw === saved) {
-        saveDeviceToken();
-        overlay.remove();
-        showToast('登录成功');
-      } else {
-        err.textContent = '密码错误，请重试';
-        document.getElementById('auth-pw-input').value = '';
-      }
-    });
-  };
-
+document.getElementById('auth-login-btn').onclick = function() {
+  var pw = document.getElementById('auth-pw-input').value;
+  var err = document.getElementById('auth-error');
+  dbGet('systemConfig', AUTH_KEY, function(record) {
+    var saved = record ? record.value : DEFAULT_PASSWORD;
+    if (pw === saved) {
+      saveDeviceToken();
+      overlay.remove();
+      showToast('登录成功');
+    } else {
+      err.textContent = '密码错误，请重试';
+      document.getElementById('auth-pw-input').value = '';
+    }
+  });
+};
   document.getElementById('auth-pw-input').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') document.getElementById('auth-login-btn').click();
   });
