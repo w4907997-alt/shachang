@@ -607,7 +607,7 @@ html, body {
   outline: none;
   min-width: 0;
   resize: none;
-  overflow-y: hidden;
+  overflow-y: auto;
   max-height: 120px;
   line-height: 1.5;
 }
