@@ -3,22 +3,19 @@
 /* 含：N9报表日期、N18按客户搜索、U2修复 */
 
 var currentReportType = 'time';
-var _reportCustomerList = []; // 缓存客户报表数据供搜索用
+var _reportCustomerList = [];
 
 /* ========== 加载报表（入口函数） ========== */
 function loadReport(type) {
   if (type) currentReportType = type;
-
   var timeRange = document.getElementById('report-time-range').value;
   var customDates = document.getElementById('report-custom-dates');
   customDates.style.display = (timeRange === 'custom') ? 'flex' : 'none';
 
-  // N18：搜索框显示/隐藏
   var searchBox = document.getElementById('report-search-box');
   if (searchBox) searchBox.style.display = (currentReportType === 'customer') ? 'block' : 'none';
 
   var range = getReportDateRange();
-
   if (currentReportType === 'time') {
     loadTimeReport(range.start, range.end);
   } else {
@@ -27,6 +24,23 @@ function loadReport(type) {
 }
 
 /* ========== 获取日期范围 ========== */
+function getReportDateRange() {
+  var timeRange = document.getElementById('report-time-range').value;
+  var start, end;
+  if (timeRange === 'today') {
+    start = getTodayString();
+    end = getTodayString();
+  } else if (timeRange === 'month') {
+    start = getMonthStartString();
+    end = getTodayString();
+  } else {
+    start = document.getElementById('report-date-start').value || getMonthStartString();
+    end = document.getElementById('report-date-end').value || getTodayString();
+  }
+  return { start: start, end: end };
+}
+
+/* ========== 获取时间范围显示文字 ========== */
 function getReportDateLabel() {
   var timeRange = document.getElementById('report-time-range').value;
   if (timeRange === 'today') {
@@ -36,21 +50,6 @@ function getReportDateLabel() {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   } else {
     return '';
-  }
-}
-
-/* ========== N9：获取时间范围显示文字 ========== */
-function getReportDateLabel() {
-  var timeRange = document.getElementById('report-time-range').value;
-  if (timeRange === 'today') {
-    return getTodayString(); // 如：2026-04-21
-  } else if (timeRange === 'month') {
-    var d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); // 如：2026-04
-  } else {
-    var start = document.getElementById('report-date-start').value || '';
-    var end = document.getElementById('report-date-end').value || '';
-    return start + ' 至 ' + end;
   }
 }
 
@@ -76,13 +75,15 @@ function loadTimeReport(startDate, endDate) {
       }
     }
 
-    // N9：显示具体日期
     var dateLabel = getReportDateLabel();
-
     var summaryHtml = '';
-    summaryHtml += '<div class="stat-card"><span class="stat-label">总金额（' + dateLabel + '）</span><span class="stat-value">' + formatMoney(totalAmount) + '</span></div>';
-    summaryHtml += '<div class="stat-card"><span class="stat-label">已结清</span><span class="stat-value" style="color:#5A9E7A;">' + formatMoney(settledAmount) + '</span></div>';
-    summaryHtml += '<div class="stat-card"><span class="stat-label">未结清</span><span class="stat-value" style="color:#D4956E;">' + formatMoney(unsettledAmount) + '</span></div>';
+    if (dateLabel) {
+      summaryHtml += '<div class="stat-card"><span class="stat-label">总金额（' + dateLabel + '）</span><span class="stat-value">' + formatMoney(totalAmount) + '</span></div>';
+    } else {
+      summaryHtml += '<div class="stat-card"><span class="stat-label">总金额</span><span class="stat-value">' + formatMoney(totalAmount) + '</span></div>';
+    }
+    summaryHtml += '<div class="stat-card"><span class="stat-label">已结清</span><span class="stat-value">' + formatMoney(settledAmount) + '</span></div>';
+    summaryHtml += '<div class="stat-card"><span class="stat-label">未结清</span><span class="stat-value">' + formatMoney(unsettledAmount) + '</span></div>';
     document.getElementById('report-summary').innerHTML = summaryHtml;
 
     var contentHtml = '';
@@ -106,8 +107,7 @@ function loadTimeReport(startDate, endDate) {
         }
 
         var firstChar = (ro.customerName || '未').substring(0, 1);
-
-        contentHtml += '<div class="order-item" onclick="openOrderInCashier(' + ro.id + ')">';
+        contentHtml += '<div class="order-item" onclick="viewOrder(' + ro.id + ')">';
         contentHtml += '<div class="' + avatarCls + '">' + firstChar + '</div>';
         contentHtml += '<div class="order-info">';
         contentHtml += '<div class="order-top">';
@@ -122,7 +122,6 @@ function loadTimeReport(startDate, endDate) {
         contentHtml += '</div></div>';
       }
     }
-
     document.getElementById('report-content').innerHTML = contentHtml;
   });
 }
@@ -166,10 +165,7 @@ function loadCustomerReport(startDate, endDate) {
           list.push(customerMap[key]);
         }
       }
-
       list.sort(function(a, b) { return b.unsettled - a.unsettled; });
-
-      // 缓存供搜索用
       _reportCustomerList = list;
 
       var grandTotal = 0, grandSettled = 0, grandUnsettled = 0;
@@ -180,11 +176,14 @@ function loadCustomerReport(startDate, endDate) {
       }
 
       var dateLabel = getReportDateLabel();
-
       var summaryHtml = '';
-      summaryHtml += '<div class="stat-card"><span class="stat-label">总金额（' + dateLabel + '）</span><span class="stat-value">' + formatMoney(grandTotal) + '</span></div>';
-      summaryHtml += '<div class="stat-card"><span class="stat-label">已结清</span><span class="stat-value" style="color:#5A9E7A;">' + formatMoney(grandSettled) + '</span></div>';
-      summaryHtml += '<div class="stat-card"><span class="stat-label">欠款</span><span class="stat-value" style="color:#D4956E;">' + formatMoney(grandUnsettled) + '</span></div>';
+      if (dateLabel) {
+        summaryHtml += '<div class="stat-card"><span class="stat-label">总金额（' + dateLabel + '）</span><span class="stat-value">' + formatMoney(grandTotal) + '</span></div>';
+      } else {
+        summaryHtml += '<div class="stat-card"><span class="stat-label">总金额</span><span class="stat-value">' + formatMoney(grandTotal) + '</span></div>';
+      }
+      summaryHtml += '<div class="stat-card"><span class="stat-label">已结清</span><span class="stat-value">' + formatMoney(grandSettled) + '</span></div>';
+      summaryHtml += '<div class="stat-card"><span class="stat-label">欠款</span><span class="stat-value">' + formatMoney(grandUnsettled) + '</span></div>';
       document.getElementById('report-summary').innerHTML = summaryHtml;
 
       renderCustomerReportList(list);
@@ -195,16 +194,14 @@ function loadCustomerReport(startDate, endDate) {
 /* ========== 渲染客户报表列表 ========== */
 function renderCustomerReportList(list) {
   var contentHtml = '';
-
   if (list.length === 0) {
     contentHtml = '<div class="empty-tip">该时间段内没有订单</div>';
   } else {
     for (var m = 0; m < list.length; m++) {
       var item = list[m];
       var firstChar = (item.name || '?').substring(0, 1);
-
       contentHtml += '<div class="order-item" onclick="showCustomerDetail(' + item.id + ')">';
-      contentHtml += '<div class="customer-avatar">' + firstChar + '</div>';
+      contentHtml += '<div class="order-avatar">' + firstChar + '</div>';
       contentHtml += '<div class="order-info">';
       contentHtml += '<div class="order-top">';
       contentHtml += '<span class="order-customer">' + item.name + '</span>';
@@ -212,32 +209,27 @@ function renderCustomerReportList(list) {
       contentHtml += '</div>';
       contentHtml += '<div class="order-meta">';
       contentHtml += '<span class="order-time">' + item.count + '笔订单</span>';
-
       if (item.unsettled > 0) {
         contentHtml += '<span class="order-status unsettled">欠 ' + formatMoney(item.unsettled) + '</span>';
       } else {
         contentHtml += '<span class="order-status settled">已结清</span>';
       }
-
       contentHtml += '</div>';
       contentHtml += '</div></div>';
     }
   }
-
   document.getElementById('report-content').innerHTML = contentHtml;
 }
 
-/* ========== N18：按客户名搜索过滤 ========== */
+/* ========== 按客户名搜索过滤 ========== */
 function filterReportCustomer() {
   var keyword = document.getElementById('report-customer-search').value.trim().toLowerCase();
   if (!keyword) {
     renderCustomerReportList(_reportCustomerList);
     return;
   }
-
   var filtered = _reportCustomerList.filter(function(item) {
     return item.name && item.name.toLowerCase().indexOf(keyword) >= 0;
   });
-
   renderCustomerReportList(filtered);
 }
