@@ -347,7 +347,9 @@ function openOrderInCashier(orderId) {
       if (items.length === 0) {
         addCashierItem();
         showPage('page-cashier');
-document.getElementById('page-cashier').scrollTop = 0;
+var cashierBody2 = document.querySelector('#page-cashier .page-body');
+if (cashierBody2) cashierBody2.scrollTop = 0;
+window.scrollTo(0, 0);
         return;
       }
 
@@ -371,7 +373,9 @@ document.getElementById('page-cashier').scrollTop = 0;
         renderCashierItems();
         updateCashierTotal();
         showPage('page-cashier');
-document.getElementById('page-cashier').scrollTop = 0;
+var cashierBody2 = document.querySelector('#page-cashier .page-body');
+if (cashierBody2) cashierBody2.scrollTop = 0;
+window.scrollTo(0, 0);
       });
     });
   });
