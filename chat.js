@@ -42,6 +42,8 @@ function sendChatMessage() {
   var text = input.value.trim();
   if (!text) return;
   input.value = '';
+  input.style.height = 'auto';
+
 
   addChatBubble(text, 'user', true);
   parseOrderText(text);
