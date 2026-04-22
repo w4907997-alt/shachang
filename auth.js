@@ -8,25 +8,24 @@ var DEFAULT_PASSWORD = '1130';
 
 /* ---------- 检查是否需要登录 ---------- */
 function checkAuth() {
+  // 防止重复调用
+  if (window._authChecking) return;
+  window._authChecking = true;
+
   dbGetAll('systemConfig', function(configs) {
     var password = null;
     var deviceToken = null;
-
     for (var i = 0; i < configs.length; i++) {
       if (configs[i].key === AUTH_KEY) password = configs[i].value;
       if (configs[i].key === AUTH_DEVICE) deviceToken = configs[i].value;
     }
-
-    // 没有密码记录 → 写入默认密码1130
     if (!password) {
       dbUpdate('systemConfig', { key: AUTH_KEY, value: DEFAULT_PASSWORD }, function() {
-        password = DEFAULT_PASSWORD;
-        checkDeviceToken(deviceToken);
+        checkDeviceToken(deviceToken, DEFAULT_PASSWORD);
       });
       return;
     }
-
-    checkDeviceToken(deviceToken);
+    checkDeviceToken(deviceToken, password);
   });
 }
 
