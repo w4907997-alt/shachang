@@ -29,7 +29,7 @@ function checkAuth() {
   });
 }
 
-function checkDeviceToken(deviceToken) {
+function checkDeviceToken(deviceToken, password) {
   if (deviceToken) {
     try {
       var data = JSON.parse(deviceToken);
