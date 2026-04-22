@@ -640,9 +640,8 @@ html, body {
 
 /* 聊天页底部占位（给固定导航栏留空间） */
 .chat-nav-spacer {
-  height: 64px;
+  height: 0;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.95);
 }
 
 /* ==================== 表单通用 ==================== */
