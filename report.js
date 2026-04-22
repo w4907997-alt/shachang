@@ -27,22 +27,16 @@ function loadReport(type) {
 }
 
 /* ========== 获取日期范围 ========== */
-function getReportDateRange() {
+function getReportDateLabel() {
   var timeRange = document.getElementById('report-time-range').value;
-  var start, end;
-
   if (timeRange === 'today') {
-    start = getTodayString();
-    end = getTodayString();
+    return getTodayString();
   } else if (timeRange === 'month') {
-    start = getMonthStartString();
-    end = getTodayString();
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   } else {
-    start = document.getElementById('report-date-start').value || getMonthStartString();
-    end = document.getElementById('report-date-end').value || getTodayString();
+    return '';
   }
-
-  return { start: start, end: end };
 }
 
 /* ========== N9：获取时间范围显示文字 ========== */
