@@ -554,4 +554,5 @@ setTimeout(function() {
   var chatArea = document.getElementById('chat-messages');
   if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
 }, 800);
+});
 
