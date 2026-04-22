@@ -83,7 +83,7 @@ function loadTimeReport(startDate, endDate) {
       summaryHtml += '<div class="stat-card"><span class="stat-label">总金额</span><span class="stat-value">' + formatMoney(totalAmount) + '</span></div>';
     }
     summaryHtml += '<div class="stat-card"><span class="stat-label">已结清</span><span class="stat-value">' + formatMoney(settledAmount) + '</span></div>';
-    summaryHtml += '<div class="stat-card"><span class="stat-label">未结清</span><span class="stat-value">' + formatMoney(unsettledAmount) + '</span></div>';
+    summaryHtml += '<div class="stat-card"><span class="stat-label">未结清</span><span class="stat-value" style="color:var(--warn)">' + formatMoney(unsettledAmount) + '</span></div>';
     document.getElementById('report-summary').innerHTML = summaryHtml;
 
     var contentHtml = '';
