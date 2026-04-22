@@ -507,16 +507,6 @@ chatInput.addEventListener('paste', function() {
     self.style.height = Math.min(self.scrollHeight, 120) + 'px';
   }, 0);
 });
-    chatInput.addEventListener('focus', function() {
-      var nav = document.querySelector('.bottom-nav');
-      if (nav) nav.style.display = 'none';
-    });
-    chatInput.addEventListener('blur', function() {
-      setTimeout(function() {
-        var nav = document.querySelector('.bottom-nav');
-        if (nav) nav.style.display = 'flex';
-      }, 200);
-    });
 
   // B2修复：保存订单后回到聊天页时，只在真正保存成功时才显示成功提示
   var chatPage = document.getElementById('page-chat');
