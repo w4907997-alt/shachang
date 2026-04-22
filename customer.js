@@ -24,6 +24,8 @@ function loadCustomerList(keyword) {
 
     dbGetAll('orders', function(orders) {
       var debtMap = {};
+      var settledMap = {};
+
       for (var i = 0; i < orders.length; i++) {
         var o = orders[i];
         if (!o.settled) {
