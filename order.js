@@ -1,4 +1,4 @@
-/* ================= order.js v3.0 ================= */
+/* ============== order.js v3.0 ============== */
 /* 收银台 + 首页数据加载 */
 /* 含：N1开单日期、N3新商品、N7退货、B9/B10修复 */
 
@@ -37,10 +37,13 @@ function openCashier(preData) {
     if (preData.customerId) setTimeout(function() { loadCashierCustomers(preData.customerId); }, 100);
   }
 
-showPage('page-cashier');
-var cashierBody = document.querySelector('#page-cashier .page-body');
-if (cashierBody) cashierBody.scrollTop = 0;
-window.scrollTo(0, 0);
+  showPage('page-cashier');
+
+  /* 【改动B4】进入收银台时滚到顶部 */
+  setTimeout(function() {
+    var pageBody = document.querySelector('#page-cashier .page-body');
+    if (pageBody) pageBody.scrollTop = 0;
+  }, 50);
 
   if (cashierItems.length === 0) addCashierItem();
   else renderCashierItems();
@@ -189,7 +192,7 @@ function updateCashierTotal() {
   }
 }
 
-/* ========== 保存订单（B10修复） ========== */
+/* ========== 保存订单（B3+B10修复） ========== */
 function saveOrder() {
   var customerId = parseInt(document.getElementById('cashier-customer').value);
   if (!customerId) { showToast('请选择客户'); return; }
@@ -222,10 +225,23 @@ function saveOrder() {
     var customerName = customer ? customer.name : '未知客户';
 
     generateOrderNo(function(orderNo) {
-      // B10修复：开单时间用选择的日期 + 当前时分
+      // 【改动B3】编辑时也用新选的日期，不再用cashierOriginalDate
       var now = new Date();
       var timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-      var fullDate = orderDate + ' ' + timeStr;
+
+      var fullDate;
+      if (cashierEditingOrderId) {
+        // 【改动B3】编辑模式：用输入框选的日期 + 原始时间部分
+        var originalTime = (cashierOriginalDate || '').substring(11, 16);
+        if (originalTime) {
+          fullDate = orderDate + ' ' + originalTime;
+        } else {
+          fullDate = orderDate + ' ' + timeStr;
+        }
+      } else {
+        // 新建模式：选的日期 + 当前时间
+        fullDate = orderDate + ' ' + timeStr;
+      }
 
       var order = {
         customerId: customerId,
@@ -234,8 +250,7 @@ function saveOrder() {
         totalAmount: totalAmount,
         paidAmount: paidAmount,
         settled: settled,
-        // B10：编辑时保留原始开单日期，结清时间单独记录
-        date: cashierEditingOrderId ? (orderDate + ' ' + (cashierOriginalDate || '').substring(11, 16)) : fullDate,
+        date: fullDate,
         orderNo: orderNo,
         summary: summary
       };
@@ -252,11 +267,10 @@ function saveOrder() {
             if (ok) {
               saveOrderItems(cashierEditingOrderId, validItems, function() {
                 saveAddressIfNew(customerId, address, function() {
-
-window._orderSavedOK = true;
-showToast('订单已更新');
-goBack();
-setTimeout(function() { refreshAfterOrderChange(); }, 100);
+                  window._orderSavedOK = true;
+                  showToast('订单已更新');
+                  goBack();
+                  refreshAfterOrderChange();
                 });
               });
             }
@@ -267,10 +281,10 @@ setTimeout(function() { refreshAfterOrderChange(); }, 100);
           if (orderId) {
             saveOrderItems(orderId, validItems, function() {
               saveAddressIfNew(customerId, address, function() {
-             window._orderSavedOK = true;
-showToast('订单已保存 ' + formatMoney(totalAmount));
-goBack();
-setTimeout(function() { refreshAfterOrderChange(); }, 100);
+                window._orderSavedOK = true;
+                showToast('订单已保存 ' + formatMoney(totalAmount));
+                goBack();
+                refreshAfterOrderChange();
               });
             });
           } else {
@@ -347,9 +361,11 @@ function openOrderInCashier(orderId) {
       if (items.length === 0) {
         addCashierItem();
         showPage('page-cashier');
-var cashierBody2 = document.querySelector('#page-cashier .page-body');
-if (cashierBody2) cashierBody2.scrollTop = 0;
-window.scrollTo(0, 0);
+        /* 【改动B4】滚到顶部 */
+        setTimeout(function() {
+          var pageBody = document.querySelector('#page-cashier .page-body');
+          if (pageBody) pageBody.scrollTop = 0;
+        }, 50);
         return;
       }
 
@@ -373,9 +389,11 @@ window.scrollTo(0, 0);
         renderCashierItems();
         updateCashierTotal();
         showPage('page-cashier');
-var cashierBody2 = document.querySelector('#page-cashier .page-body');
-if (cashierBody2) cashierBody2.scrollTop = 0;
-window.scrollTo(0, 0);
+        /* 【改动B4】滚到顶部 */
+        setTimeout(function() {
+          var pageBody = document.querySelector('#page-cashier .page-body');
+          if (pageBody) pageBody.scrollTop = 0;
+        }, 50);
       });
     });
   });
@@ -396,7 +414,7 @@ function deleteOrder(orderId) {
   });
 }
 
-/* ========== N7：退货功能 ========== */
+/* ========== N7：退货功能（改为可选任意订单） ========== */
 function createRefund(originalOrderId) {
   dbGet('orders', originalOrderId, function(order) {
     if (!order) { showToast('原订单不存在'); return; }
@@ -490,7 +508,7 @@ function doRefund(originalOrderId) {
             });
           }
           tx.oncomplete = function() {
-            closeModal();
+           closeModal();
             showToast('退货订单已生成，金额 -' + formatMoney(refundTotal));
             refreshAfterOrderChange();
           };
@@ -500,12 +518,18 @@ function doRefund(originalOrderId) {
   });
 }
 
-/* ========== B9：优化刷新 ========== */
+/* ========== 【改动B2】优化刷新 ========== */
 function refreshAfterOrderChange() {
-  try { if (typeof loadHomePage === 'function') loadHomePage(); } catch(e) {}
-  try { if (typeof loadCustomerList === 'function') loadCustomerList(); } catch(e) {}
   try {
-    if (typeof currentCustomerId !== 'undefined' && currentCustomerId && typeof showCustomerDetail === 'function') {
+    if (typeof loadHomePage === 'function') loadHomePage();
+  } catch(e) {}
+  /* 【改动B2】也刷新客户列表（如果客户页可见） */
+  try {
+    if (typeof loadCustomerList === 'function') loadCustomerList();
+  } catch(e) {}
+  /* 【改动B2】如果当前在客户详情页，也刷新 */
+  try {
+    if (currentPage === 'page-customer-detail' && typeof showCustomerDetail === 'function' && typeof currentCustomerId !== 'undefined' && currentCustomerId) {
       showCustomerDetail(currentCustomerId);
     }
   } catch(e) {}
