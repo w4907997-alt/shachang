@@ -578,13 +578,13 @@ html, body {
   flex-shrink: 0;
   /* 【改动】固定定位在底部导航栏上方 */
   position: fixed;
-  bottom: 56px;
+  bottom: 64px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
   max-width: 430px;
   z-index: 50;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
 }
 .open-btn {
   background: var(--primary-dark);
