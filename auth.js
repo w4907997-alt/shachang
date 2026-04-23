@@ -1,4 +1,4 @@
-/* ================= auth.js v3.0 ================= */
+/* ============== auth.js v3.0 ============== */
 /* 登录密码系统：4位数字密码，默认1130 */
 
 var AUTH_KEY = 'app_password';
@@ -8,28 +8,29 @@ var DEFAULT_PASSWORD = '1130';
 
 /* ---------- 检查是否需要登录 ---------- */
 function checkAuth() {
-  // 防止重复调用
-  if (window._authChecking) return;
-  window._authChecking = true;
-
   dbGetAll('systemConfig', function(configs) {
     var password = null;
     var deviceToken = null;
+
     for (var i = 0; i < configs.length; i++) {
       if (configs[i].key === AUTH_KEY) password = configs[i].value;
       if (configs[i].key === AUTH_DEVICE) deviceToken = configs[i].value;
     }
+
+    // 没有密码记录 → 写入默认密码1130
     if (!password) {
       dbUpdate('systemConfig', { key: AUTH_KEY, value: DEFAULT_PASSWORD }, function() {
-        checkDeviceToken(deviceToken, DEFAULT_PASSWORD);
+        password = DEFAULT_PASSWORD;
+        checkDeviceToken(deviceToken);
       });
       return;
     }
-    checkDeviceToken(deviceToken, password);
+
+    checkDeviceToken(deviceToken);
   });
 }
 
-function checkDeviceToken(deviceToken, password) {
+function checkDeviceToken(deviceToken) {
   if (deviceToken) {
     try {
       var data = JSON.parse(deviceToken);
@@ -46,6 +47,10 @@ function checkDeviceToken(deviceToken, password) {
 
 /* ---------- 登录界面 ---------- */
 function showLoginScreen() {
+  /* 【改动B7】先移除可能已存在的旧overlay，避免重复 */
+  var existingOverlay = document.getElementById('auth-overlay');
+  if (existingOverlay) existingOverlay.remove();
+
   var overlay = document.createElement('div');
   overlay.id = 'auth-overlay';
   overlay.className = 'auth-overlay';
@@ -62,21 +67,27 @@ function showLoginScreen() {
   overlay.appendChild(box);
   document.body.appendChild(overlay);
 
-document.getElementById('auth-login-btn').onclick = function() {
-  var pw = document.getElementById('auth-pw-input').value;
-  var err = document.getElementById('auth-error');
-  dbGet('systemConfig', AUTH_KEY, function(record) {
-    var saved = record ? record.value : DEFAULT_PASSWORD;
-    if (pw === saved) {
-      saveDeviceToken();
-      overlay.remove();
-      showToast('登录成功');
-    } else {
-      err.textContent = '密码错误，请重试';
-      document.getElementById('auth-pw-input').value = '';
-    }
-  });
-};
+  document.getElementById('auth-login-btn').onclick = function() {
+    var pw = document.getElementById('auth-pw-input').value;
+    var err = document.getElementById('auth-error');
+
+    dbGetAll('systemConfig', function(configs) {
+      var saved = null;
+      for (var i = 0; i < configs.length; i++) {
+        if (configs[i].key === AUTH_KEY) saved = configs[i].value;
+      }
+
+      if (pw === saved) {
+        saveDeviceToken();
+        overlay.remove();
+        showToast('登录成功');
+      } else {
+        err.textContent = '密码错误，请重试';
+        document.getElementById('auth-pw-input').value = '';
+      }
+    });
+  };
+
   document.getElementById('auth-pw-input').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') document.getElementById('auth-login-btn').click();
   });
@@ -135,3 +146,7 @@ function doChangePassword() {
     });
   });
 }
+
+/* 【改动B7】去掉底部DOMContentLoaded重复调用checkAuth */
+/* 密码检查由 window.onload → initDB回调 → checkAuth() 统一触发 */
+/* 不再在这里额外setTimeout调用，避免时序问题和重复弹窗 */
