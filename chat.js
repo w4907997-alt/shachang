@@ -1,4 +1,4 @@
-/* ================= chat.js v3.0 ================= */
+/* ============== chat.js v3.0 ============== */
 /* 聊天式记账：输入文字 → 简称映射 → 解析 → 确认开单 */
 /* 含：B1/B2/B8修复、N11聊天持久化、N12简称映射 */
 
@@ -42,8 +42,10 @@ function sendChatMessage() {
   var text = input.value.trim();
   if (!text) return;
   input.value = '';
-  input.style.height = 'auto';
 
+  /* 【改动】发送后重置textarea高度 */
+  input.style.height = 'auto';
+  input.style.height = '40px';
 
   addChatBubble(text, 'user', true);
   parseOrderText(text);
@@ -62,14 +64,13 @@ function addChatBubble(content, type, save) {
 
   var bubble = document.createElement('div');
   bubble.className = 'chat-bubble ' + type;
-  // B8修复：保留换行
+
+  /* 【改动】用户消息直接用textContent，CSS的white-space:pre-wrap会保留换行 */
   if (type === 'user') {
-  // 先转义HTML，再把换行替换成<br>
-  var escaped = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  bubble.innerHTML = escaped.replace(/\n/g, '<br>');
-} else {
-  bubble.innerHTML = content;
-}
+    bubble.textContent = content;
+  } else {
+    bubble.innerHTML = content;
+  }
   container.appendChild(bubble);
   container.scrollTop = container.scrollHeight;
 
@@ -235,79 +236,52 @@ function parseOrderText(text) {
 
         remaining = processedText;
 
-        // 3. 先按分段处理，分段符：逗号、换行、顿号、空格组
-// 重新分段（用原始替换后的文本）
-var segs = remaining.split(/[,，、\n\r]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
-
-// 对每个分段，尝试匹配产品+数量
-var sorted = products.slice().sort(function(a, b) {
-  return b.name.length - a.name.length;
-});
-
-var matchedSegIndexes = [];
-
-for (var si = 0; si < segs.length; si++) {
-  var seg = segs[si];
-  var segMatched = false;
-
-  for (var pi = 0; pi < sorted.length; pi++) {
-    var p = sorted[pi];
-    var eName = escapeRegex(p.name);
-    var qty = 0;
-
-    // 产品名+数字
-    var m1 = seg.match(new RegExp(eName + '\\s*(\\d+\\.?\\d*)'));
-    if (m1 && m1[1] && parseFloat(m1[1]) > 0) {
-      qty = parseFloat(m1[1]);
-    }
-
-    // 数字+产品名
-    if (!qty) {
-      var m2 = seg.match(new RegExp('(\\d+\\.?\\d*)\\s*' + eName));
-      if (m2 && m2[1] && parseFloat(m2[1]) > 0) {
-        qty = parseFloat(m2[1]);
-      }
-    }
-
-    // 只有产品名没有数字 → 默认1
-    if (!qty && seg.indexOf(p.name) >= 0) {
-      qty = 1;
-    }
-
-    if (qty > 0) {
-      // 检查是否已经添加过同一个产品（防止重复）
-      var alreadyAdded = false;
-      for (var ai = 0; ai < result.items.length; ai++) {
-        if (result.items[ai].productId === p.id) {
-          alreadyAdded = true;
-          break;
-        }
-      }
-      if (!alreadyAdded) {
-        result.items.push({
-          productId: p.id,
-          productName: p.name,
-          quantity: qty,
-          price: p.price || 0,
-          unit: p.unit || ''
+        // 3. 提取产品和数量（名称长的优先匹配）
+        var sorted = products.slice().sort(function(a, b) {
+          return b.name.length - a.name.length;
         });
-        segMatched = true;
-        matchedSegIndexes.push(si);
-        break; // 一个分段只匹配一个产品
-      }
-    }
-  }
-}
 
-// 没匹配到产品的分段，看是不是客户名/地址（remaining用未匹配的分段拼起来）
-var unmatchedSegs = [];
-for (var ui = 0; ui < segs.length; ui++) {
-  if (matchedSegIndexes.indexOf(ui) === -1) {
-    unmatchedSegs.push(segs[ui]);
-  }
-}
-remaining = unmatchedSegs.join(' ');
+        for (var i = 0; i < sorted.length; i++) {
+          var p = sorted[i];
+          var eName = escapeRegex(p.name);
+          var qty = 0;
+          var matched = false;
 
+          // 产品名+数字
+          var m1 = remaining.match(new RegExp(eName + '\\s*(\\d+\\.?\\d*)'));
+          if (m1 && m1[1]) {
+            qty = parseFloat(m1[1]);
+            remaining = remaining.replace(m1[0], ' ');
+            matched = true;
+          }
+
+          // 数字+产品名
+          if (!matched) {
+            var m2 = remaining.match(new RegExp('(\\d+\\.?\\d*)\\s*' + eName));
+            if (m2 && m2[1]) {
+              qty = parseFloat(m2[1]);
+              remaining = remaining.replace(m2[0], ' ');
+              matched = true;
+            }
+          }
+
+          // 只有产品名没有数字 → 默认1
+          if (!matched && remaining.indexOf(p.name) >= 0) {
+            qty = 1;
+            remaining = remaining.replace(p.name, ' ');
+            matched = true;
+          }
+
+          if (matched && qty > 0) {
+            result.items.push({
+              productId: p.id,
+              productName: p.name,
+              quantity: qty,
+              price: p.price || 0,
+              unit: p.unit || ''
+            });
+          }
+        }
 
         // 4. 匹配客户姓名
         var cSorted = customers.slice().sort(function(a, b) {
@@ -385,7 +359,7 @@ function showCustomerInfoInChat(customerId) {
           html += '<div style="font-size:12px;color:#8A9BB0;">' + (ro.date || '').substring(0, 10) + ' ' + formatMoney(ro.totalAmount) + ' ' + (ro.summary || '') + '</div>';
         }
       }
-      html += '<div style="margin-top:8px;"><span style="color:#5BA4C8;cursor:pointer;font-size:13px;" onclick="showCustomerDetail(' + customerId + ')">查看详情 ›</span></div>';
+      html += '<div style="margin-top:8px;"><span style="color:#5BA4C8;cursor:pointer;font-size:13px;" onclick="showCustomerDetail(' + customerId + ')">查看详情 ‣</span></div>';
 
       addChatBubble(html, 'system', true);
     });
@@ -475,11 +449,10 @@ function loadChatHistory() {
         // 普通气泡
         var bubble = document.createElement('div');
         bubble.className = 'chat-bubble ' + (msg.type || 'system');
+        /* 【改动】用户消息用textContent保留换行格式 */
         if (msg.type === 'user') {
-  var escaped = (msg.content || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  bubble.innerHTML = escaped.replace(/\n/g, '<br>');
-}
- else {
+          bubble.textContent = msg.content || '';
+        } else {
           bubble.innerHTML = msg.content || '';
         }
         container.appendChild(bubble);
@@ -490,23 +463,131 @@ function loadChatHistory() {
   });
 }
 
+/* 【新增】搜索聊天记录 */
+function toggleChatSearch() {
+  var panel = document.getElementById('chat-search-panel');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'flex';
+    document.getElementById('chat-search-input').focus();
+  } else {
+    closeChatSearch();
+  }
+}
+
+function closeChatSearch() {
+  var panel = document.getElementById('chat-search-panel');
+  panel.style.display = 'none';
+  document.getElementById('chat-search-input').value = '';
+  // 恢复正常显示
+  reloadChatDisplay();
+}
+
+function searchChatMessages() {
+  var keyword = document.getElementById('chat-search-input').value.trim().toLowerCase();
+  if (!keyword) {
+    reloadChatDisplay();
+    return;
+  }
+
+  if (!db) return;
+  dbGetAll('chatMessages', function(messages) {
+    var filtered = messages.filter(function(msg) {
+      if (!msg.content) return false;
+      if (msg.content.toLowerCase().indexOf(keyword) >= 0) return true;
+      // 也搜索识别结果里的内容
+      if (msg.resultData) {
+        var rd = msg.resultData;
+        if (rd.customer && rd.customer.toLowerCase().indexOf(keyword) >= 0) return true;
+        if (rd.address && rd.address.toLowerCase().indexOf(keyword) >= 0) return true;
+        if (rd.items) {
+          for (var i = 0; i < rd.items.length; i++) {
+            if (rd.items[i].productName && rd.items[i].productName.toLowerCase().indexOf(keyword) >= 0) return true;
+          }
+        }
+      }
+      return false;
+    });
+
+    renderChatMessages(filtered);
+  });
+}
+
+function reloadChatDisplay() {
+  if (!db) return;
+  var container = document.getElementById('chat-messages');
+  container.innerHTML = '<div class="chat-welcome" style="display:none;"><p>你好！我是记账助手</p><p>输入商品和数量，我帮你开单</p><p>例如：水泥20 黄沙15</p></div>';
+  loadChatHistory();
+}
+
+function renderChatMessages(messages) {
+  var container = document.getElementById('chat-messages');
+  container.innerHTML = '';
+
+  if (messages.length === 0) {
+    container.innerHTML = '<div class="empty-tip">没有找到匹配的消息</div>';
+    return;
+  }
+
+  for (var i = 0; i < messages.length; i++) {
+    var msg = messages[i];
+
+    var timeDiv = document.createElement('div');
+    timeDiv.className = 'chat-time';
+    timeDiv.textContent = msg.date || '';
+    container.appendChild(timeDiv);
+
+    if (msg.type === 'success') {
+      var sCard = document.createElement('div');
+      sCard.className = 'chat-success-card';
+      sCard.innerHTML =
+        '<div class="chat-success-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+        '<span class="chat-success-text">订单保存成功</span>';
+      container.appendChild(sCard);
+    } else if (msg.type === 'result' && msg.resultData) {
+      var rCard = document.createElement('div');
+      rCard.className = 'chat-result-card';
+      var rHtml = '<div class="chat-result-label">识别结果</div>';
+      var rd = msg.resultData;
+      if (rd.items) {
+        for (var ri = 0; ri < rd.items.length; ri++) {
+          rHtml += '<div class="chat-result-item"><div class="chat-result-dot"></div>' +
+            rd.items[ri].productName + ' × ' + rd.items[ri].quantity + ' ' + (rd.items[ri].unit || '') + '</div>';
+        }
+      }
+      if (rd.customer) rHtml += '<div class="chat-result-item"><div class="chat-result-dot"></div>客户：' + rd.customer + '</div>';
+      if (rd.address) rHtml += '<div class="chat-result-item"><div class="chat-result-dot"></div>地址：' + rd.address + '</div>';
+      rCard.innerHTML = rHtml;
+      container.appendChild(rCard);
+    } else {
+      var bubble = document.createElement('div');
+      bubble.className = 'chat-bubble ' + (msg.type || 'system');
+      if (msg.type === 'user') {
+        bubble.textContent = msg.content || '';
+      } else {
+        bubble.innerHTML = msg.content || '';
+      }
+      container.appendChild(bubble);
+    }
+  }
+
+  container.scrollTop = container.scrollHeight;
+}
+
 /* ========== 页面初始化 ========== */
 document.addEventListener('DOMContentLoaded', function() {
   // 发送按钮
   document.getElementById('chat-send-btn').addEventListener('click', sendChatMessage);
-// textarea自动撑高
-var chatInput = document.getElementById('chat-input');
-chatInput.addEventListener('input', function() {
-  this.style.height = 'auto';
-  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-});
-chatInput.addEventListener('paste', function() {
-  var self = this;
-  setTimeout(function() {
-    self.style.height = 'auto';
-    self.style.height = Math.min(self.scrollHeight, 120) + 'px';
-  }, 0);
-});
+
+  /* 【改动】去掉回车发送，改为textarea自动撑高 */
+  var chatInput = document.getElementById('chat-input');
+
+  // textarea自动撑高
+  chatInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+
+  // 【注意】不再监听keypress发送，回车就是换行，只有点发送按钮才发送
 
   // B2修复：保存订单后回到聊天页时，只在真正保存成功时才显示成功提示
   var chatPage = document.getElementById('page-chat');
@@ -528,31 +609,27 @@ chatInput.addEventListener('paste', function() {
   // 接管"记账"Tab
   var _prevSwitchTab = switchTab;
   switchTab = function(tabName) {
-  if (tabName === 'chat') {
-    pageHistory = [];
-    var pages = document.querySelectorAll('.page');
-    for (var p = 0; p < pages.length; p++) pages[p].classList.remove('active');
-    document.getElementById('page-chat').classList.add('active');
-    currentPage = 'page-chat';
-    var navs = document.querySelectorAll('.nav-item');
-    for (var n = 0; n < navs.length; n++) navs[n].classList.remove('active');
-    navs[1].classList.add('active');
-    // 每次进入聊天页滚到底部
-    setTimeout(function() {
-      var chatArea = document.getElementById('chat-messages');
-      if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
-    }, 50);
-    return;
-  }
-  _prevSwitchTab(tabName);
-};
+    if (tabName === 'chat') {
+      pageHistory = [];
+      var pages = document.querySelectorAll('.page');
+      for (var p = 0; p < pages.length; p++) pages[p].classList.remove('active');
+      document.getElementById('page-chat').classList.add('active');
+      currentPage = 'page-chat';
+      var navs = document.querySelectorAll('.nav-item');
+      for (var n = 0; n < navs.length; n++) navs[n].classList.remove('active');
+      navs[1].classList.add('active');
+      // 【改动】切到聊天页时滚动到底部
+      setTimeout(function() {
+        var container = document.getElementById('chat-messages');
+        container.scrollTop = container.scrollHeight;
+      }, 100);
+      return;
+    }
+    _prevSwitchTab(tabName);
+  };
 
-// N11：加载历史聊天记录
-setTimeout(function() {
-  if (db) loadChatHistory();
-  // 进入聊天页时滚到底部
-  var chatArea = document.getElementById('chat-messages');
-  if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
-}, 800);
+  // N11：加载历史聊天记录
+  setTimeout(function() {
+    if (db) loadChatHistory();
+  }, 800);
 });
-
