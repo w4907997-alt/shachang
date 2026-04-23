@@ -1,10 +1,10 @@
-/* ================= customer.js v3.0 ================= */
+/* ============== customer.js v3.0 ============== */
 /* 客户管理 + 客户详情 + 专属单价 */
 /* 含：U7/U10修复、客户头像、渐变汇总卡片 */
 
 var currentCustomerId = null;
 
-/* ========== 加载客户列表（带头像） ========== */
+/* ========== 加载客户列表（带头像）========== */
 function loadCustomerList(keyword) {
   dbGetAll('customers', function(customers) {
     if (keyword) {
@@ -25,24 +25,23 @@ function loadCustomerList(keyword) {
     dbGetAll('orders', function(orders) {
       var debtMap = {};
       var settledMap = {};
-
       for (var i = 0; i < orders.length; i++) {
         var o = orders[i];
+        var cid = o.customerId;
+        if (!debtMap[cid]) debtMap[cid] = 0;
+        if (!settledMap[cid]) settledMap[cid] = 0;
         if (!o.settled) {
-          var cid = o.customerId;
-          if (!debtMap[cid]) debtMap[cid] = 0;
           debtMap[cid] += (o.totalAmount || 0) - (o.paidAmount || 0);
-            } else {
-              var cid2 = o.customerId;
-              if (!settledMap[cid2]) settledMap[cid2] = 0;
-              settledMap[cid2] += o.totalAmount || 0;
-            }
+        } else {
+          settledMap[cid] += (o.totalAmount || 0);
+        }
       }
 
       var html = '';
       for (var j = 0; j < customers.length; j++) {
         var c = customers[j];
         var debt = debtMap[c.id] || 0;
+        var settled = settledMap[c.id] || 0;
         var firstChar = (c.name || '?').substring(0, 1);
 
         html += '<div class="customer-item" onclick="showCustomerDetail(' + c.id + ')">';
@@ -51,11 +50,13 @@ function loadCustomerList(keyword) {
         html += '<div class="customer-name">' + c.name + '</div>';
         if (c.phone) html += '<div class="customer-phone">' + c.phone + '</div>';
         html += '</div>';
+
+        /* 【改动B6】已结清客户显示已结清金额，不再空白 */
         if (debt > 0) {
           html += '<div class="customer-debt">欠 ' + formatMoney(debt) + '</div>';
-            } else {
-          html += '<div class="customer-debt" style="color:var(--ok)">已结清 ' + formatMoney(settledMap[c.id] || 0) + '</div>';
-            }
+        } else if (settled > 0) {
+          html += '<div class="customer-settled">已结清 ' + formatMoney(settled) + '</div>';
+        }
 
         html += '</div>';
       }
@@ -170,26 +171,24 @@ function showCustomerDetail(customerId) {
         var html = '';
 
         // 账目汇总（渐变卡片）
-html += '<div class="summary-card-gradient">';
-html += '<div class="summary-row"><span class="summary-label">总金额</span><span class="summary-value">' + formatMoney(totalAmount) + '</span></div>';
-if (unsettledAmount > 0) {
-  html += '<div class="summary-row"><span class="summary-label">欠款</span><span class="summary-value">' + formatMoney(unsettledAmount) + '</span></div>';
-} else if (orders.length > 0) {
-              html += '<div class="summary-row"><span class="summary-label">已结清</span><span class="summary-value">' + formatMoney(settledAmount) + '</span></div>';
-} else {
-              html += '<div class="summary-row"><span class="summary-label">已结清</span><span class="summary-value">¥0.00</span></div>';
-}
-html += '</div>';
+        html += '<div class="summary-card-gradient">';
+        html += '<div class="summary-row"><span class="summary-label">总金额</span><span class="summary-value">' + formatMoney(totalAmount) + '</span></div>';
+        if (unsettledAmount > 0) {
+          html += '<div class="summary-row"><span class="summary-label">欠款</span><span class="summary-value" style="color:#FFD4B8;">' + formatMoney(unsettledAmount) + '</span></div>';
+        } else {
+          // U10修复：全部结清后显示「已结清」不留空白
+          html += '<div class="summary-row"><span class="summary-label">已结清</span><span class="summary-value">' + formatMoney(settledAmount) + '</span></div>';
+        }
+        html += '</div>';
 
-
-        // 基本信息（收纳到更多信息下拉）
+        // 基本信息
         html += '<div class="detail-section">';
         html += '<div class="detail-section-title">基本信息</div>';
         html += '<div class="detail-row"><span class="label">姓名</span><span class="value">' + customer.name + '</span></div>';
         html += '<div class="detail-row"><span class="label">电话</span><span class="value">' + (customer.phone || '未填写') + '</span></div>';
         html += '</div>';
 
-        // U7修复：专属单价直接在这里加载，不用setTimeout
+        // U7修复：专属单价直接在这里加载（不用setTimeout）
         html += '<div id="price-section-box"></div>';
 
         // 地址
@@ -239,10 +238,12 @@ html += '</div>';
         }
         html += '</div>';
 
-        // 操作按钮
+        // 操作按钮 - 退货改为选订单
         html += '<div class="action-buttons">';
         html += '<button class="btn-secondary" onclick="showDeleteCustomer(' + customerId + ',\'' + customer.name.replace(/'/g, "\\'") + '\')">删除客户</button>';
-        html += '<button class="btn-primary" onclick="createRefund(' + (orders.length > 0 ? orders[0].id : 0) + ')" style="background:#D4956E;">退货</button>';
+        if (orders.length > 0) {
+          html += '<button class="btn-primary" onclick="showRefundOrderPicker(' + customerId + ')" style="background:#D4956E;">退货</button>';
+        }
         html += '</div>';
 
         document.getElementById('customer-detail-content').innerHTML = html;
@@ -252,6 +253,41 @@ html += '</div>';
         loadCustomerPrices(customerId);
       });
     });
+  });
+}
+
+/* 【新增】退货订单选择器 - 可选任意历史订单 */
+function showRefundOrderPicker(customerId) {
+  dbGetAll('orders', function(allOrders) {
+    var orders = allOrders.filter(function(o) {
+      return o.customerId === customerId && !o.isRefund && o.totalAmount > 0;
+    });
+    orders.sort(function(a, b) { return b.date > a.date ? 1 : -1; });
+
+    if (orders.length === 0) {
+      showToast('没有可退货的订单');
+      return;
+    }
+
+    var bodyHTML = '<div style="margin-bottom:12px;font-size:14px;color:#8A9BB0;">选择要退货的订单：</div>';
+    for (var i = 0; i < orders.length; i++) {
+      var o = orders[i];
+      bodyHTML += '<div class="order-item" style="margin-bottom:8px;cursor:pointer;" onclick="closeModal();createRefund(' + o.id + ')">';
+      bodyHTML += '<div class="order-info" style="width:100%;">';
+      bodyHTML += '<div class="order-top">';
+      bodyHTML += '<span class="order-customer">' + (o.date || '').substring(0, 10) + '</span>';
+      bodyHTML += '<span class="order-amount">' + formatMoney(o.totalAmount) + '</span>';
+      bodyHTML += '</div>';
+      bodyHTML += '<div class="order-meta">';
+      bodyHTML += '<span class="order-time">' + (o.date || '').substring(11, 16) + '</span>';
+      if (o.summary) bodyHTML += '<span class="order-summary">' + o.summary + '</span>';
+      bodyHTML += '</div>';
+      bodyHTML += '</div></div>';
+    }
+
+    showModal('选择退货订单', bodyHTML,
+      '<button class="btn-secondary" onclick="closeModal()">取消</button>'
+    );
   });
 }
 
