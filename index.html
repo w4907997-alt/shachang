@@ -61,6 +61,7 @@
       <p>输入商品和数量，我帮你开单</p>
       <p>例如：水泥20 黄沙15</p>
     </div>
+  <div id="chat-bottom-anchor"></div>
   </div>
   <div class="chat-input-area" id="chat-input-area">
     <button class="open-btn" onclick="openCashier()">开单</button>
@@ -128,7 +129,15 @@
     </div>
   </div>
 </div>
-
+<!-- ========== 订单详情（只读） ========== -->
+<div id="page-order-detail" class="page">
+  <div class="page-header">
+    <button class="back-btn" onclick="goBack()">← 返回</button>
+    <h1>订单详情</h1>
+    <button class="header-btn" id="order-detail-edit-btn">编辑</button>
+  </div>
+  <div class="page-body" id="order-detail-content"></div>
+</div>
 <!-- ========== 客户列表 ========== -->
 <div id="page-customers" class="page">
   <div class="page-header">
@@ -167,8 +176,8 @@
     <div class="report-filter">
       <div style="display:flex;align-items:center;gap:10px;">
         <select id="report-time-range" class="form-select" onchange="loadReport()" style="flex:1;">
-          <option value="today">今天</option>
-          <option value="month" selected>本月</option>
+          <option value="today" selected>今天</option>
+          <option value="month">本月</option>
           <option value="custom">自定义</option>
         </select>
         <span id="report-date-label" style="font-size:12px;color:#8A9BB0;white-space:nowrap;flex-shrink:0;"></span>
