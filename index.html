@@ -414,6 +414,9 @@ window.onload = function() {
     if (typeof loadHomePage === 'function') loadHomePage();
     if (typeof checkAuth === 'function') checkAuth();
   });
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
 };
 </script>
 
