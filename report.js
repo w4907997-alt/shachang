@@ -1,9 +1,9 @@
 /* ============== report.js v3.0 ============== */
 /* 报表统计：按时间查账 + 按客户查账 */
-/* 含：N9报表日期、N18按客户搜索、U2修复 */
+/* 含：N9报表日期、N18按客户搜索、Bug4修复 */
 
 var currentReportType = 'time';
-var _reportCustomerList = []; // 缓存客户报表数据供搜索用
+var _reportCustomerList = [];
 
 /* ========== 加载报表（入口函数） ========== */
 function loadReport(type) {
@@ -13,13 +13,11 @@ function loadReport(type) {
   var customDates = document.getElementById('report-custom-dates');
   customDates.style.display = (timeRange === 'custom') ? 'flex' : 'none';
 
-  // N18：搜索框显示/隐藏
   var searchBox = document.getElementById('report-search-box');
   if (searchBox) searchBox.style.display = (currentReportType === 'customer') ? 'block' : 'none';
 
   var range = getReportDateRange();
 
-  /* 【改动B8】每次加载报表时更新日期标签 */
   updateReportDateLabel();
 
   if (currentReportType === 'time') {
@@ -48,14 +46,14 @@ function getReportDateRange() {
   return { start: start, end: end };
 }
 
-/* ========== N9：获取时间范围显示文字 ========== */
+/* ========== 获取时间范围显示文字 ========== */
 function getReportDateLabel() {
   var timeRange = document.getElementById('report-time-range').value;
   if (timeRange === 'today') {
-    return getTodayString(); // 如：2026-04-23
+    return getTodayString();
   } else if (timeRange === 'month') {
     var d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); // 如：2026-04
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   } else {
     var start = document.getElementById('report-date-start').value || '';
     var end = document.getElementById('report-date-end').value || '';
@@ -63,7 +61,7 @@ function getReportDateLabel() {
   }
 }
 
-/* 【新增】更新日期标签到页面 */
+/* 更新日期标签到页面 */
 function updateReportDateLabel() {
   var labelEl = document.getElementById('report-date-label');
   if (labelEl) {
@@ -93,11 +91,9 @@ function loadTimeReport(startDate, endDate) {
       }
     }
 
-    // N9：显示具体日期
-    var dateLabel = getReportDateLabel();
-
+    /* 【Bug4修复】日期不放在总金额label里，只显示在筛选器旁边的span */
     var summaryHtml = '';
-    summaryHtml += '<div class="stat-card"><span class="stat-label">总金额（' + dateLabel + '）</span><span class="stat-value">' + formatMoney(totalAmount) + '</span></div>';
+    summaryHtml += '<div class="stat-card"><span class="stat-label">总金额</span><span class="stat-value">' + formatMoney(totalAmount) + '</span></div>';
     summaryHtml += '<div class="stat-card"><span class="stat-label">已结清</span><span class="stat-value" style="color:#5A9E7A;">' + formatMoney(settledAmount) + '</span></div>';
     summaryHtml += '<div class="stat-card"><span class="stat-label">未结清</span><span class="stat-value" style="color:#D4956E;">' + formatMoney(unsettledAmount) + '</span></div>';
     document.getElementById('report-summary').innerHTML = summaryHtml;
@@ -124,7 +120,7 @@ function loadTimeReport(startDate, endDate) {
 
         var firstChar = (ro.customerName || '未').substring(0, 1);
 
-        contentHtml += '<div class="order-item" onclick="openOrderInCashier(' + ro.id + ')">';
+        contentHtml += '<div class="order-item" onclick="showOrderDetail(' + ro.id + ')">';
         contentHtml += '<div class="' + avatarCls + '">' + firstChar + '</div>';
         contentHtml += '<div class="order-info">';
         contentHtml += '<div class="order-top">';
@@ -186,7 +182,6 @@ function loadCustomerReport(startDate, endDate) {
 
       list.sort(function(a, b) { return b.unsettled - a.unsettled; });
 
-      // 缓存供搜索用
       _reportCustomerList = list;
 
       var grandTotal = 0, grandSettled = 0, grandUnsettled = 0;
@@ -196,10 +191,9 @@ function loadCustomerReport(startDate, endDate) {
         grandUnsettled += list[k].unsettled;
       }
 
-      var dateLabel = getReportDateLabel();
-
+      /* 【Bug4修复】日期不放在总金额label里 */
       var summaryHtml = '';
-      summaryHtml += '<div class="stat-card"><span class="stat-label">总金额（' + dateLabel + '）</span><span class="stat-value">' + formatMoney(grandTotal) + '</span></div>';
+      summaryHtml += '<div class="stat-card"><span class="stat-label">总金额</span><span class="stat-value">' + formatMoney(grandTotal) + '</span></div>';
       summaryHtml += '<div class="stat-card"><span class="stat-label">已结清</span><span class="stat-value" style="color:#5A9E7A;">' + formatMoney(grandSettled) + '</span></div>';
       summaryHtml += '<div class="stat-card"><span class="stat-label">欠款</span><span class="stat-value" style="color:#D4956E;">' + formatMoney(grandUnsettled) + '</span></div>';
       document.getElementById('report-summary').innerHTML = summaryHtml;
