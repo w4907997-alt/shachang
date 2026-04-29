@@ -424,10 +424,13 @@ html, body {
 #page-chat.active {
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .chat-area {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 16px 16px 0;
   display: flex;
@@ -435,7 +438,7 @@ html, body {
   gap: 4px;
   -webkit-overflow-scrolling: touch;
   /* 【改动】底部留出输入栏+导航栏的空间 */
-  padding-bottom: 130px;
+  padding-bottom: 140px;
 }
 .chat-welcome {
   text-align: center;
@@ -578,7 +581,7 @@ html, body {
   flex-shrink: 0;
   /* 【改动】固定定位在底部导航栏上方 */
   position: fixed;
-  bottom: 64px;
+  bottom: 70px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
