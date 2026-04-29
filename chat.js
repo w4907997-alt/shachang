@@ -459,7 +459,9 @@ function loadChatHistory() {
       }
     }
 
-    container.scrollTop = container.scrollHeight;
+setTimeout(function() {
+  container.scrollTop = container.scrollHeight;
+}, 100);
   });
 }
 
@@ -619,10 +621,10 @@ document.addEventListener('DOMContentLoaded', function() {
       for (var n = 0; n < navs.length; n++) navs[n].classList.remove('active');
       navs[1].classList.add('active');
       // 【改动】切到聊天页时滚动到底部
-      setTimeout(function() {
-        var container = document.getElementById('chat-messages');
-        container.scrollTop = container.scrollHeight;
-      }, 100);
+setTimeout(function() {
+  var container = document.getElementById('chat-messages');
+  if (container) container.scrollTop = container.scrollHeight;
+}, 1000);visualViewport
       return;
     }
     _prevSwitchTab(tabName);
@@ -632,4 +634,5 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     if (db) loadChatHistory();
   }, 800);
+  
 });
