@@ -217,11 +217,11 @@ function showCustomerDetail(customerId) {
             var isRefund = o.isRefund || (o.totalAmount < 0);
             var statusClass = isRefund ? 'refund' : (o.settled ? 'settled' : 'unsettled');
             var statusText = isRefund ? '退货' : (o.settled ? '已结清' : '未结清');
-            var amtClass = isRefund ? 'order-amount refund' : 'order-amount';
+            var amtClass = isRefund ? 'order-amount refund' : (o.settled ? 'order-amount' : 'order-amount unpaid');
             var firstChar = (o.customerName || '未').substring(0, 1);
             var avatarClass = (isRefund || !o.settled) ? 'order-avatar unpaid' : 'order-avatar';
 
-            html += '<div class="order-item" onclick="openOrderInCashier(' + o.id + ')">';
+            html += '<div class="order-item" onclick="showOrderDetail(' + o.id + ')">';
             html += '<div class="' + avatarClass + '">' + firstChar + '</div>';
             html += '<div class="order-info">';
             html += '<div class="order-top">';
