@@ -214,7 +214,7 @@ function saveOrder() {
   var summary = summaryParts.join('、');
 
   var settled = document.getElementById('cashier-settled').checked;
-  var paidAmount = settled ? totalAmount : (parseFloat(document.getElementById('cashier-paid-amount').value) || 0);
+  var paidAmount = settled ? totalAmount : 0;
   var address = document.getElementById('cashier-address').value.trim();
 
   // N1：获取开单日期
@@ -398,7 +398,88 @@ function openOrderInCashier(orderId) {
     });
   });
 }
+/* ========== 订单详情（只读） ========== */
+function showOrderDetail(orderId) {
+  dbGet('orders', orderId, function(order) {
+    if (!order) { showToast('订单不存在'); return; }
 
+    dbGetByIndex('orderItems', 'orderId', orderId, function(items) {
+      var isRefund = order.isRefund || (order.totalAmount < 0);
+      var statusText = isRefund ? '退货' : (order.settled ? '已结清' : '未结清');
+
+      var html = '';
+
+      // 顶部汇总卡片
+html += '<div class="summary-card-gradient">';
+html += '<div class="summary-row"><span class="summary-label">客户</span><span class="summary-value">' + (order.customerName || '未知') + '</span></div>';
+if (order.address) {
+  html += '<div class="summary-row"><span class="summary-label">地址</span><span class="summary-value" style="font-size:14px;">' + order.address + '</span></div>';
+}
+html += '<div class="summary-row"><span class="summary-label">总金额</span><span class="summary-value">' + formatMoney(order.totalAmount) + '</span></div>';
+html += '<div class="summary-row"><span class="summary-label">状态</span><span class="summary-value" style="font-size:14px;background:rgba(255,255,255,0.2);padding:3px 12px;border-radius:20px;">' + statusText + '</span></div>';
+html += '</div>';
+
+      // 商品明细
+      html += '<div class="detail-section">';
+      html += '<div class="detail-section-title">商品明细</div>';
+      if (items.length === 0) {
+        html += '<div style="color:#8A9BB0;font-size:14px;">无明细记录</div>';
+      } else {
+        for (var i = 0; i < items.length; i++) {
+          var it = items[i];
+          var sub = (it.quantity || 0) * (it.price || 0);
+          html += '<div class="detail-row">';
+          html += '<span class="label">' + it.productName + ' × ' + Math.abs(it.quantity) + (it.unit ? ' ' + it.unit : '') + '</span>';
+          html += '<span class="value">' + formatMoney(Math.abs(sub)) + '</span>';
+          html += '</div>';
+        }
+      }
+      html += '</div>';
+
+      // 订单信息
+      html += '<div class="detail-section">';
+      html += '<div class="detail-section-title">订单信息</div>';
+      html += '<div class="detail-row"><span class="label">日期</span><span class="value">' + (order.date || '').substring(0, 16) + '</span></div>';
+      if (order.orderNo) {
+        html += '<div class="detail-row"><span class="label">订单号</span><span class="value" style="font-size:12px;color:#8A9BB0;">' + order.orderNo + '</span></div>';
+      }
+      if (!order.settled && !isRefund) {
+        html += '<div class="detail-row"><span class="label">已付</span><span class="value">' + formatMoney(order.paidAmount || 0) + '</span></div>';
+        html += '<div class="detail-row"><span class="label">欠款</span><span class="value" style="color:var(--warn);">' + formatMoney((order.totalAmount || 0) - (order.paidAmount || 0)) + '</span></div>';
+      }
+      html += '</div>';
+
+      // 底部按钮
+if (!isRefund) {
+  html += '<div class="action-buttons">';
+  html += '<button class="btn-secondary" style="color:#e53935;border-color:#e53935;" onclick="deleteOrder(' + orderId + ')">删除订单</button>';
+  html += '<button class="btn-primary" onclick="openOrderInCashier(' + orderId + ')">编辑订单</button>';
+  html += '</div>';
+  html += '<div style="margin-top:8px;">';
+  html += '<button class="btn-secondary" style="width:100%;" onclick="showDeliveryNote(' + orderId + ')">配送单</button>';
+  html += '</div>';
+}
+
+      document.getElementById('order-detail-content').innerHTML = html;
+
+      var editBtn = document.getElementById('order-detail-edit-btn');
+      if (editBtn) {
+        if (!isRefund) {
+          editBtn.style.display = '';
+          editBtn.onclick = function() { openOrderInCashier(orderId); };
+        } else {
+          editBtn.style.display = 'none';
+        }
+      }
+
+      showPage('page-order-detail');
+      setTimeout(function() {
+        var pageBody = document.querySelector('#page-order-detail .page-body');
+        if (pageBody) pageBody.scrollTop = 0;
+      }, 50);
+    });
+  });
+}
 /* ========== 删除订单 ========== */
 function deleteOrder(orderId) {
   showConfirm('删除订单', '确定要删除这张订单吗？此操作不可撤销。', function() {
@@ -533,6 +614,9 @@ function refreshAfterOrderChange() {
       showCustomerDetail(currentCustomerId);
     }
   } catch(e) {}
+  try {
+    if (typeof loadReport === 'function') loadReport();
+  } catch(e) {}
 }
 
 /* ========== 首页数据加载（新UI模板） ========== */
@@ -607,7 +691,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var firstChar = (ro.customerName || '未').substring(0, 1);
         var timeStr = (ro.date || '').substring(11, 16);
 
-        html += '<div class="order-item" onclick="openOrderInCashier(' + ro.id + ')">';
+        html += '<div class="order-item" onclick="showOrderDetail(' + ro.id + ')">';
         html += '<div class="' + avatarCls + '">' + firstChar + '</div>';
         html += '<div class="order-info">';
         html += '<div class="order-top">';
